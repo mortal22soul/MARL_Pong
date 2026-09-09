@@ -169,11 +169,69 @@ def _short_eval(cfg, state, episodes: int, base_seed: int) -> float:
     return hist_overlap(np.asarray(ys["A1"]), np.asarray(ys["A2"]))
 
 
+def checkpoint_paths(run_dir: str, every: int = 100) -> list[str]:
+    """Sampled iter_*.pt paths from a run, ordered by training step.
+
+    `every` picks one checkpoint per roughly that many env steps' worth of
+    iterations (the run's checkpoint stride is inferred); final.pt is excluded
+    since the numbered iters carry the training progression.
+    """
+    iters = sorted(
+        int(f[5:-3]) for f in os.listdir(run_dir) if f.startswith("iter_") and f.endswith(".pt")
+    )
+    if len(iters) < 2:
+        return [os.path.join(run_dir, f"iter_{i}.pt") for i in iters]
+    stride = iters[1] - iters[0]
+    k = max(1, round(every / stride))
+    picked = iters[::k]
+    if picked[-1] != iters[-1]:
+        picked.append(iters[-1])  # always include the last checkpoint
+    return [os.path.join(run_dir, f"iter_{i}.pt") for i in picked]
+
+
+def _log_csv_for_run(run_dir: str) -> str:
+    """results/models/<run> -> results/logs/<run>.csv"""
+    name = os.path.basename(os.path.normpath(run_dir))
+    return os.path.join(os.path.dirname(os.path.normpath(run_dir)), "..", "logs", f"{name}.csv")
+
+
+def overlap_sweep(
+    cfg, run_dir: str, every: int = 100, episodes: int = 4
+) -> tuple[np.ndarray, np.ndarray]:
+    """Coverage overlap of team A across a run's checkpoints (x: env steps)."""
+    paths = checkpoint_paths(run_dir, every)
+    if len(paths) < 2:
+        raise ValueError(f"need >=2 checkpoints in {run_dir}")
+    overlaps = np.asarray(overlap_at_checkpoints(cfg, paths, episodes=episodes), dtype=np.float64)
+    rollout = _rollout_from_csv(_log_csv_for_run(run_dir))
+    steps = np.asarray([int(os.path.basename(p)[5:-3]) for p in paths], dtype=np.float64)
+    return steps * rollout, overlaps
+
+
+def plot_overlap_sweep(sweeps: dict[str, tuple[np.ndarray, np.ndarray]], out_path: str) -> None:
+    fig, ax = plt.subplots(figsize=(7, 4))
+    for label, (steps, ov) in sweeps.items():
+        ax.plot(steps / 1000.0, ov, marker="o", ms=3, label=label)
+    ax.set_xlabel("env steps (k)")
+    ax.set_ylabel("team A coverage overlap")
+    ax.set_ylim(-0.05, 1.05)
+    ax.set_title("Teammate specialization over training (lower = more specialized)")
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--curves", nargs="+", help="label=csv pairs for learning curves")
     ap.add_argument("--column", default="mean_return_A")
     ap.add_argument("--traj", help="trajectory .npz for coverage heatmaps")
+    ap.add_argument(
+        "--sweep-run",
+        action="append",
+        help="results/models/<run> dir for the checkpoint overlap sweep (repeatable)",
+    )
     ap.add_argument("--out-dir", default="results/plots")
     args = ap.parse_args()
     os.makedirs(args.out_dir, exist_ok=True)
@@ -185,6 +243,17 @@ def main() -> None:
         plot_learning_curves(by_label, os.path.join(args.out_dir, f"curves_{args.column}.png"))
     if args.traj:
         plot_y_heatmaps(args.traj, os.path.join(args.out_dir, "coverage_heatmaps.png"))
+    if args.sweep_run:
+        import dataclasses
+
+        from environment.config import Config
+
+        cfg = dataclasses.replace(Config(), max_steps=500)
+        sweeps = {}
+        for run_dir in args.sweep_run:
+            label = os.path.basename(os.path.normpath(run_dir))
+            sweeps[label] = overlap_sweep(cfg, run_dir, episodes=4)
+        plot_overlap_sweep(sweeps, os.path.join(args.out_dir, "overlap_over_training.png"))
 
 
 if __name__ == "__main__":

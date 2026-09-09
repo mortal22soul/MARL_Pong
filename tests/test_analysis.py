@@ -8,7 +8,12 @@ import numpy as np
 import torch
 
 from agents.multi_agent_ppo import IndependentPPO, PPOConfig
-from analysis.plots import learning_curves, load_run_csv, overlap_at_checkpoints
+from analysis.plots import (
+    checkpoint_paths,
+    learning_curves,
+    load_run_csv,
+    overlap_at_checkpoints,
+)
 from environment.config import Config
 from environment.pong_env import PongEnv
 
@@ -100,3 +105,18 @@ def test_overlap_at_checkpoints_with_fresh_weights(tmp_path):
     overlaps = overlap_at_checkpoints(cfg, [path], episodes=1)
     assert len(overlaps) == 1
     assert 0.0 <= overlaps[0] <= 1.0
+
+
+def test_checkpoint_paths_samples_and_orders(tmp_path):
+    for i in range(20, 201, 20):
+        (tmp_path / f"iter_{i}.pt").write_bytes(b"x")
+    (tmp_path / "final.pt").write_bytes(b"x")
+    paths = checkpoint_paths(str(tmp_path), every=100)
+    iters = [int(os.path.basename(p)[5:-3]) for p in paths]
+    assert iters == [20, 120, 200]  # stride 20 -> every 5th, last included
+    assert all(p.endswith(".pt") and "final" not in p for p in paths)
+
+
+def test_checkpoint_paths_sparse_dir(tmp_path):
+    (tmp_path / "iter_40.pt").write_bytes(b"x")
+    assert checkpoint_paths(str(tmp_path)) == [str(tmp_path / "iter_40.pt")]

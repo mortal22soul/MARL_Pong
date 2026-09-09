@@ -39,7 +39,7 @@ def test_learning_curves_aligns_on_common_iters(tmp_path):
     p1, p2 = str(tmp_path / "a.csv"), str(tmp_path / "b.csv")
     _write_csv(p1, [1, 2, 3, 4], [0.0, 1.0, 2.0, 3.0])
     _write_csv(p2, [2, 3, 4, 5], [2.0, 4.0, 6.0, 8.0])
-    c = learning_curves([p1, p2])
+    c = learning_curves([p1, p2], smooth=1)
     assert c["steps"].tolist() == [2048.0, 3072.0, 4096.0]
     assert c["mean"].tolist() == [1.5, 3.0, 4.5]
     assert c["min"].tolist() == [1.0, 2.0, 3.0]
@@ -120,3 +120,18 @@ def test_checkpoint_paths_samples_and_orders(tmp_path):
 def test_checkpoint_paths_sparse_dir(tmp_path):
     (tmp_path / "iter_40.pt").write_bytes(b"x")
     assert checkpoint_paths(str(tmp_path)) == [str(tmp_path / "iter_40.pt")]
+
+
+def test_learning_curves_smooths_and_skips_nans(tmp_path):
+    p = str(tmp_path / "run.csv")
+    rets = [np.nan] + [float(i % 2) for i in range(2, 12)]
+    _write_csv(p, list(range(1, 12)), rets)
+    c = learning_curves([p], smooth=3)
+    raw = load_run_csv(p)["mean_return_A"]
+    assert np.isnan(raw).any()
+    assert not np.isnan(c["mean"]).any()  # NaN gaps get filled from neighbors
+    # A constant series must stay constant under smoothing.
+    p2 = str(tmp_path / "flat.csv")
+    _write_csv(p2, list(range(1, 12)), [2.0] * 11)
+    c2 = learning_curves([p2], smooth=5)
+    assert np.allclose(c2["mean"], 2.0)

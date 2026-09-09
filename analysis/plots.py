@@ -35,11 +35,13 @@ def load_run_csv(path: str) -> dict[str, np.ndarray]:
     return out
 
 
-def learning_curves(csv_paths: list[str], column: str = "mean_return_A") -> dict:
+def learning_curves(csv_paths: list[str], column: str = "mean_return_A", smooth: int = 51) -> dict:
     """Align runs on their common 'iter' values and aggregate a column.
 
     Returns {"steps", "mean", "min", "max"} where steps are total env steps
     (iter * rollout) shared by every run; runs may end at different iters.
+    Per-iteration values are single-episode samples, so the aggregate is
+    smoothed with a NaN-aware rolling window (`smooth` iterations) by default.
     """
     if not csv_paths:
         raise ValueError("need at least one CSV")
@@ -55,13 +57,28 @@ def learning_curves(csv_paths: list[str], column: str = "mean_return_A") -> dict
     if len(common) == 0:
         raise ValueError("runs share no common iterations")
     stacked = np.asarray([np.asarray([t[i] for i in common]) for t in per_run])
+    stacked = np.stack([_nan_smooth(run, smooth) for run in stacked])
     rollout = _rollout_from_csv(csv_paths[0])
     return {
         "steps": common * float(rollout),
-        "mean": stacked.mean(axis=0),
-        "min": stacked.min(axis=0),
-        "max": stacked.max(axis=0),
+        "mean": np.nanmean(stacked, axis=0),
+        "min": np.nanmin(stacked, axis=0),
+        "max": np.nanmax(stacked, axis=0),
     }
+
+
+def _nan_smooth(y: np.ndarray, window: int) -> np.ndarray:
+    """Rolling mean that skips NaNs (per-iteration logs use NaN for 'no episode ended')."""
+    window = min(window, len(y))
+    if window % 2 == 0:
+        window -= 1
+    if window <= 1:
+        return y
+    mask = ~np.isnan(y)
+    filled = np.where(mask, y, 0.0)
+    num = np.convolve(filled, np.ones(window), mode="same")
+    den = np.convolve(mask.astype(np.float64), np.ones(window), mode="same")
+    return np.where(den > 0, num / np.maximum(den, 1e-9), np.nan)
 
 
 def _rollout_from_csv(csv_path: str) -> float:
@@ -74,7 +91,10 @@ def _rollout_from_csv(csv_path: str) -> float:
 
 
 def plot_learning_curves(
-    curves_by_label: dict[str, dict], out_path: str, ylabel: str = "team A return"
+    curves_by_label: dict[str, dict],
+    out_path: str,
+    ylabel: str = "team A return",
+    title: str = "Training curves (mean ± seed spread)",
 ) -> None:
     fig, ax = plt.subplots(figsize=(7, 4))
     for label, c in curves_by_label.items():
@@ -84,7 +104,7 @@ def plot_learning_curves(
     ax.set_xlabel("env steps (k)")
     ax.set_ylabel(ylabel)
     ax.legend()
-    ax.set_title("Training curves (mean ± seed spread)")
+    ax.set_title(title)
     fig.tight_layout()
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
@@ -226,6 +246,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--curves", nargs="+", help="label=csv pairs for learning curves")
     ap.add_argument("--column", default="mean_return_A")
+    ap.add_argument("--title", default="Training curves (mean ± seed spread)")
     ap.add_argument("--traj", help="trajectory .npz for coverage heatmaps")
     ap.add_argument(
         "--sweep-run",
@@ -240,7 +261,11 @@ def main() -> None:
         for pair in args.curves:
             label, path = pair.split("=", 1)
             by_label[label] = learning_curves([path], args.column)
-        plot_learning_curves(by_label, os.path.join(args.out_dir, f"curves_{args.column}.png"))
+        plot_learning_curves(
+            by_label,
+            os.path.join(args.out_dir, f"curves_{args.column}.png"),
+            title=args.title,
+        )
     if args.traj:
         plot_y_heatmaps(args.traj, os.path.join(args.out_dir, "coverage_heatmaps.png"))
     if args.sweep_run:

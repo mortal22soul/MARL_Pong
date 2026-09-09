@@ -33,3 +33,6 @@ Thumbs.db
 results/videos/*.mp4
 results/videos/*.avi
 results/videos/*.mkv
+
+# Intermediate training checkpoints (final.pt files are kept)
+results/models/*/iter_*.pt

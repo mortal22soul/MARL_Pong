@@ -7,9 +7,22 @@ ad-hoc pre-1.0 while the game is built ahead of the RL phase in `TASK.md`.
 ## [Unreleased]
 
 ### Added
+- Completed 3-seed protocol: fresh 2v2 runs at 1M steps (seeds 0-2) and 1v1
+  at 300k (seeds 0-2), with a uniform 60-episode eval pass per run vs
+  self / heuristic / random (`evaluation/eval_suite.py`).
+- Cross-seed summary table (`analysis/summarize.py` → `results/summary.md`).
+- Report (`report/report.md`): results, coordination analysis, documented
+  spec deviations, honest limitations.
 - Demo gameplay recording (`demo.py --record out.mp4`): headless capture via
   a dummy SDL display, `--fps` override for fast capture; imageio +
   imageio-ffmpeg dependencies.
+
+### Changed
+- Learning-curve plots are now NaN-aware and rolling-smoothed (per-iteration
+  logs are single-episode samples); `plot_learning_curves` takes a title.
+- Seed-0 eval records superseded by the uniform 60-episode pass; the earlier
+  warm-start `2v2_seed0_cont1M` run is kept as a documented extra, outside
+  the headline protocol (fresh 1M per seed).
 - Analysis module (`analysis/plots.py`): learning curves with seed spread,
   paddle-coverage heatmaps from trajectory dumps, teammate coverage-overlap
   sweep across checkpoints; matplotlib added as a dev dependency.

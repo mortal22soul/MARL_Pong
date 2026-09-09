@@ -7,6 +7,9 @@ ad-hoc pre-1.0 while the game is built ahead of the RL phase in `TASK.md`.
 ## [Unreleased]
 
 ### Added
+- Analysis module (`analysis/plots.py`): learning curves with seed spread,
+  paddle-coverage heatmaps from trajectory dumps, teammate coverage-overlap
+  sweep across checkpoints; matplotlib added as a dev dependency.
 - Reward variance (`var_return_A`) in evaluation output per the TASK.md §8
   metric table.
 - Central arena config (`environment/config.py`): normalized sim space,

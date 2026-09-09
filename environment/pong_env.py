@@ -72,8 +72,9 @@ class PongEnv:
         cfg = self.cfg
         ang = math.radians(self._rng.uniform(-cfg.serve_angle_deg_max, cfg.serve_angle_deg_max))
         direction = self._rng.choice([-1.0, 1.0]) if toward is None else toward
-        vx = math.cos(ang) * cfg.ball_speed * direction
-        vy = math.sin(ang) * cfg.ball_speed
+        speed = self._rng.uniform(cfg.serve_speed_min, cfg.serve_speed_max)
+        vx = math.cos(ang) * speed * direction
+        vy = math.sin(ang) * speed
         self.ball = [0.0, 0.0, vx, vy]
 
     # --- stepping ---
@@ -92,7 +93,7 @@ class PongEnv:
             side = self._side(a)
             if (side == "left" and vx < 0) or (side == "right" and vx > 0):
                 px, vx, vy, _ = physics.paddle_collision(
-                    px, py, vx, vy, self.paddles[a][0], side, cfg
+                    px, py, vx, vy, self.paddles[a][0], side, cfg, self.paddles[a][1]
                 )
         self.ball = [px, py, vx, vy]
         self.steps += 1

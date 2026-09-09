@@ -48,3 +48,38 @@ def test_paddle_range_overlap():
     lo1, hi1 = CFG.paddle_range(1)
     assert lo0 < hi1 and lo1 < hi0  # regions overlap
     assert hi0 > hi1 and lo1 < lo0  # but not identical
+
+
+def test_hit_escalates_speed():
+    import math
+
+    _px, vx, vy, hit = physics.paddle_collision(
+        -CFG.paddle_x_offset, 0.0, -1.0, 0.0, 0.0, "left", CFG
+    )
+    assert hit
+    assert math.hypot(vx, vy) > 1.0  # speedup applied
+
+
+def test_escalation_clamped_at_max():
+    import math
+
+    vx, vy = -CFG.ball_speed_max, 0.0
+    for _ in range(5):
+        _px, vx, vy, _ = physics.paddle_collision(
+            CFG.paddle_x_offset, 0.0, abs(vx), vy, 0.0, "right", CFG
+        )
+        _px, vx, vy, _ = physics.paddle_collision(
+            -CFG.paddle_x_offset, 0.0, -abs(vx), vy, 0.0, "left", CFG
+        )
+    assert math.hypot(vx, vy) <= CFG.ball_speed_max + 1e-6
+
+
+def test_smash_transfers_paddle_motion():
+    _px, _vx, vy_moving, hit1 = physics.paddle_collision(
+        -CFG.paddle_x_offset, 0.0, -1.0, 0.0, 0.0, "left", CFG, paddle_vy=1.0
+    )
+    _px, _vx, vy_still, hit2 = physics.paddle_collision(
+        -CFG.paddle_x_offset, 0.0, -1.0, 0.0, 0.0, "left", CFG, paddle_vy=0.0
+    )
+    assert hit1 and hit2
+    assert vy_moving > vy_still  # moving paddle imparts extra vy

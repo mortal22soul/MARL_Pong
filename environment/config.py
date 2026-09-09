@@ -11,11 +11,17 @@ from dataclasses import dataclass, field
 class Config:
     # --- simulation ---
     dt: float = 1.0 / 60.0
-    # Ball serve: uniform angle in [-max, +max] degrees off horizontal, random side.
-    ball_speed: float = 0.9  # arena-halfwidths per second (x-dominant)
-    ball_speed_max: float = 1.6  # clamp after paddle boosts
+    # Ball serve: uniform angle in [-max, +max] degrees off horizontal, random side,
+    # and uniform speed in [serve_speed_min, serve_speed_max] so serves vary.
+    serve_speed_min: float = 0.7
+    serve_speed_max: float = 1.0
+    ball_speed_max: float = 1.6  # clamp after rally escalation
     serve_angle_deg_max: float = 35.0
     ball_radius: float = 0.025
+    # Rally escalation: vx multiplied by hit_speedup on every paddle contact,
+    # plus a "smash" kick transferring paddle motion into the ball.
+    hit_speedup: float = 1.03
+    paddle_smash_factor: float = 0.35
 
     # --- paddles ---
     paddle_height: float = 0.34

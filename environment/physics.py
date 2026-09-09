@@ -37,12 +37,20 @@ def step_ball(
 
 
 def paddle_collision(
-    px: float, py: float, vx: float, vy: float, paddle_y: float, side: str, cfg: Config
+    px: float,
+    py: float,
+    vx: float,
+    vy: float,
+    paddle_y: float,
+    side: str,
+    cfg: Config,
+    paddle_vy: float = 0.0,
 ) -> tuple[float, float, float, bool]:
     """Reflect off a paddle if overlapping. Returns (px, vx, vy, hit).
 
     side: 'left' (Team A, ball moving -x) or 'right' (Team B, ball moving +x).
-    Adds a small vy kick based on hit offset + clamps speed.
+    Each hit escalates speed (hit_speedup), adds an angle kick based on hit
+    offset, and transfers some paddle motion (smash). Total speed is clamped.
     """
     h = cfg.paddle_height / 2.0
     w = cfg.paddle_width / 2.0 + cfg.ball_radius
@@ -50,13 +58,13 @@ def paddle_collision(
     hit = False
     if side == "left" and vx < 0 and abs(px - x_line) <= w and abs(py - paddle_y) <= h:
         px = x_line + w
-        vx = abs(vx) * 1.02
-        vy += (py - paddle_y) * 1.5
+        vx = abs(vx) * cfg.hit_speedup
+        vy += (py - paddle_y) * 1.5 + paddle_vy * cfg.paddle_smash_factor
         hit = True
     elif side == "right" and vx > 0 and abs(px - x_line) <= w and abs(py - paddle_y) <= h:
         px = x_line - w
-        vx = -abs(vx) * 1.02
-        vy += (py - paddle_y) * 1.5
+        vx = -abs(vx) * cfg.hit_speedup
+        vy += (py - paddle_y) * 1.5 + paddle_vy * cfg.paddle_smash_factor
         hit = True
     if hit:
         speed = (vx * vx + vy * vy) ** 0.5

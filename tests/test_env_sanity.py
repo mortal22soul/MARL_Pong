@@ -88,3 +88,17 @@ def test_determinism_same_seed():
     o2, _ = env2.reset(seed=42)
     for a in o1:
         assert np.allclose(o1[a], o2[a])
+
+
+def test_serve_speed_varies_and_in_range():
+    import math
+
+    speeds = set()
+    env = PongEnv(seed=0)
+    for s in range(20):
+        env.reset(seed=s)
+        vx, vy = env.ball[2], env.ball[3]
+        speed = math.hypot(vx, vy)
+        assert env.cfg.serve_speed_min - 1e-6 <= speed <= env.cfg.serve_speed_max + 1e-6
+        speeds.add(round(speed, 3))
+    assert len(speeds) > 1  # serves differ across episodes

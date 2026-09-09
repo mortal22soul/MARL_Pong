@@ -7,6 +7,8 @@ ad-hoc pre-1.0 while the game is built ahead of the RL phase in `TASK.md`.
 ## [Unreleased]
 
 ### Added
+- Reward variance (`var_return_A`) in evaluation output per the TASK.md §8
+  metric table.
 - Central arena config (`environment/config.py`): normalized sim space,
   paddle-overlap parameter, point threshold, step cap.
 - Independent-PPO training (`agents/`, `experiments/`): per-agent

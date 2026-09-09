@@ -1,9 +1,9 @@
 """Deterministic evaluation for trained marl-pong teams.
 
 Loads a checkpoint (all agents), plays greedy episodes, and reports:
-win rate, average team return, rally length, plus teammate positional
-specialization (per-paddle mean/std/range of y and the overlap between
-teammates' coverage histograms). Trajectories are saved to .npz for
+win rate, average team return, return variance, rally length, plus teammate
+positional specialization (per-paddle mean/std/range of y and the overlap
+between teammates' coverage histograms). Trajectories are saved to .npz for
 heatmap plotting. Win rate alone is NOT treated as coordination evidence.
 """
 
@@ -44,9 +44,6 @@ def evaluate_weights(
 
     env = PongEnv(config=cfg, seed=base_seed)
     trainer = IndependentPPO(env.agent_ids, cfg=PPOConfig())
-    for a in trainer.ids:
-        trainer.nets[a].load_state_dict(state[a])
-        trainer.nets[a].eval()
     subs = {}
     if opponent != "self":
         for i, b in enumerate([a for a in env.agent_ids if a.startswith("B")]):
@@ -56,8 +53,6 @@ def evaluate_weights(
                 if opponent == "heuristic"
                 else RandomAgent(seed=500 + i)
             )
-    env = PongEnv(config=cfg, seed=base_seed)
-    trainer = IndependentPPO(env.agent_ids, cfg=PPOConfig())
     for a in trainer.ids:
         trainer.nets[a].load_state_dict(state[a])
         trainer.nets[a].eval()
@@ -104,6 +99,7 @@ def evaluate_weights(
         "win_rate_B": wins["B"] / episodes,
         "draw_rate": wins["draw"] / episodes,
         "mean_return_A": float(np.mean(returns)),
+        "var_return_A": float(np.var(returns)),
         "mean_ep_len": float(np.mean(lens)),
         "specialization": spec,
     }

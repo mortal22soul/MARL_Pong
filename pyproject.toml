@@ -7,7 +7,16 @@ dependencies = [
     "gymnasium",
     "pygame-ce",
     "numpy",
+    "torch", # CPU-only index pinned below; device="cpu" throughout
 ]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
 
 [dependency-groups]
 dev = [

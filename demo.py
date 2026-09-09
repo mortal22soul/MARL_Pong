@@ -20,6 +20,8 @@ def main() -> None:
         help="Team B policy (random scores fast; heuristic defends near-perfectly).",
     )
     args = ap.parse_args()
+    if args.human and args.headless:
+        ap.error("--human needs a display; drop --headless to play.")
 
     import dataclasses
 
@@ -32,14 +34,20 @@ def main() -> None:
         else:
             agents[a] = HeuristicAgent(team=a[0])
 
-    human_up = human_down = False
     headed = not args.headless
     if headed:
         env.render()  # initialize pygame display before any event polling
+    if args.human and headed:
+        lo, hi = cfg.paddle_range(0)
+        print(
+            f"You play A1 (left side, upper region y in [{lo:.2f}, {hi:.2f}]). "
+            "W=up, S=down, ESC=quit."
+        )
     for ep in range(args.episodes):
         obs, _ = env.reset(seed=ep)
         done = False
         while not done:
+            human_act = 0
             if headed:
                 import pygame
 
@@ -47,19 +55,19 @@ def main() -> None:
                     if e.type == pygame.QUIT:
                         env.close()
                         return
-                    if e.type in (pygame.KEYDOWN, pygame.KEYUP):
-                        pressed = e.type == pygame.KEYDOWN
-                        if e.key == pygame.K_w:
-                            human_up = pressed
-                        elif e.key == pygame.K_s:
-                            human_down = pressed
-                        elif e.key == pygame.K_ESCAPE and pressed:
-                            env.close()
-                            return
+                    if e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
+                        env.close()
+                        return
+                if args.human:
+                    keys = pygame.key.get_pressed()
+                    if keys[pygame.K_w] and not keys[pygame.K_s]:
+                        human_act = 1
+                    elif keys[pygame.K_s] and not keys[pygame.K_w]:
+                        human_act = 2
             actions = {}
             for a, o in obs.items():
-                if args.human and a == "A1" and not args.headless:
-                    actions[a] = 1 if human_up else (2 if human_down else 0)
+                if args.human and a == "A1" and headed:
+                    actions[a] = human_act
                 else:
                     actions[a] = agents[a].act(o)
             obs, _rewards, terminated, truncated, info = env.step(actions)

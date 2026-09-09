@@ -1,0 +1,27 @@
+[project]
+name = "marl-pong"
+version = "0.1.0"
+description = "Emergent Coordination in 2v2 Pong via Independent PPO (game first, RL later)"
+requires-python = ">=3.14"
+dependencies = [
+    "gymnasium",
+    "pygame-ce",
+    "numpy",
+]
+
+[dependency-groups]
+dev = [
+    "ruff",
+    "black",
+    "pytest",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.black]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

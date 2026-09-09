@@ -45,11 +45,15 @@ class PongEnv:
         if seed is not None:
             self._rng = random.Random(seed)
             self._np_rng = np.random.default_rng(seed)
-        # Paddles start centered in their allowed ranges.
+        # Paddles spawn in their own zones (upper/lower quartile of their range),
+        # not stacked at center — like a doubles formation. 1v1 spawns center.
         self.paddles: dict[str, list[float]] = {}
         for a in self.agent_ids:
             lo, hi = self._allowed_range(a)
-            y0 = max(lo, min(hi, 0.0))
+            if self.cfg.mode == "1v1":
+                y0 = 0.0
+            else:
+                y0 = lo + 0.75 * (hi - lo) if self._slot(a) == 0 else lo + 0.25 * (hi - lo)
             self.paddles[a] = [y0, 0.0]
         self.scores = {"A": 0, "B": 0}
         self.steps = 0

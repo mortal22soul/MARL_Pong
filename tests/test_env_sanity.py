@@ -135,3 +135,12 @@ def test_invalid_mode_rejected():
 
     with pytest.raises(ValueError):
         PongEnv(config=dataclasses.replace(Config(), mode="3v3"))
+
+
+def test_2v2_spawn_formation_separated():
+    env = PongEnv(seed=0)  # default 2v2
+    env.reset(seed=0)
+    assert env.paddles["A1"][0] > 0.2  # upper zone
+    assert env.paddles["A2"][0] < -0.2  # lower zone
+    assert env.paddles["B1"][0] > 0.2
+    assert env.paddles["B2"][0] < -0.2

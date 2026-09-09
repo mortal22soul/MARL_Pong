@@ -30,10 +30,12 @@ def main() -> None:
     env = PongEnv(config=cfg, render_mode=None if args.headless else "human", seed=0)
     agents = {}
     for i, a in enumerate(env.agent_ids):
+        lo, hi = env._allowed_range(a)
+        home = (lo + hi) / 2.0
         if a.startswith("B") and args.opponent == "random":
             agents[a] = RandomAgent(seed=100 + i)
         else:
-            agents[a] = HeuristicAgent(team=a[0])
+            agents[a] = HeuristicAgent(team=a[0], home=home)
 
     headed = not args.headless
     if headed:

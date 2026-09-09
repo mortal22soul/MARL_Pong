@@ -102,3 +102,36 @@ def test_serve_speed_varies_and_in_range():
         assert env.cfg.serve_speed_min - 1e-6 <= speed <= env.cfg.serve_speed_max + 1e-6
         speeds.add(round(speed, 3))
     assert len(speeds) > 1  # serves differ across episodes
+
+
+def test_1v1_teams_and_full_range():
+    cfg = dataclasses.replace(Config(), mode="1v1")
+    env = PongEnv(config=cfg, seed=0)
+    obs, _ = env.reset(seed=0)
+    assert set(obs) == {"A1", "B1"}  # one paddle per side, not same-team pair
+    lo, hi = env._allowed_range("A1")
+    limit = 1.0 - cfg.paddle_height / 2.0
+    assert lo == -limit and hi == limit  # full field, unlike 2v2 partial ranges
+    # Paddle can actually travel from top to bottom.
+    for _ in range(300):
+        obs, _, term, trunc, _ = env.step({"A1": 2, "B1": 1})
+        if all(term.values()) or all(trunc.values()):
+            break
+    assert env.paddles["A1"][0] > 0.5 and env.paddles["B1"][0] < -0.5
+
+
+def test_1v1_scoring_and_reward():
+    cfg = dataclasses.replace(Config(), mode="1v1", points_to_win=1)
+    env = PongEnv(config=cfg, seed=0)
+    env.reset(seed=0)
+    env.ball = [1.04, 0.0, 2.0, 0.0]  # about to exit right -> A scores
+    _, rewards, terminated, _, _ = env.step({"A1": 0, "B1": 0})
+    assert rewards == {"A1": 1.0, "B1": -1.0}
+    assert all(terminated.values())
+
+
+def test_invalid_mode_rejected():
+    import pytest
+
+    with pytest.raises(ValueError):
+        PongEnv(config=dataclasses.replace(Config(), mode="3v3"))

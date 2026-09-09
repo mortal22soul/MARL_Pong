@@ -38,7 +38,9 @@ class Config:
     # --- episode ---
     points_to_win: int = 5
     max_steps: int = 2000  # prevents infinite rallies stalling training
-    n_agents: int = 4  # set to 2 for 1v1 sanity mode
+    # "2v2" (A1,A2 vs B1,B2, overlapping partial ranges) or
+    # "1v1" (A1 vs B1, each covering the full field height).
+    mode: str = "2v2"
 
     # --- render ---
     screen_width: int = 800

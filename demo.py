@@ -19,13 +19,14 @@ def main() -> None:
         default="heuristic",
         help="Team B policy (random scores fast; heuristic defends near-perfectly).",
     )
+    ap.add_argument("--mode", choices=["1v1", "2v2"], default="2v2")
     args = ap.parse_args()
     if args.human and args.headless:
         ap.error("--human needs a display; drop --headless to play.")
 
     import dataclasses
 
-    cfg = dataclasses.replace(Config(), points_to_win=args.points)
+    cfg = dataclasses.replace(Config(), points_to_win=args.points, mode=args.mode)
     env = PongEnv(config=cfg, render_mode=None if args.headless else "human", seed=0)
     agents = {}
     for i, a in enumerate(env.agent_ids):
@@ -38,11 +39,14 @@ def main() -> None:
     if headed:
         env.render()  # initialize pygame display before any event polling
     if args.human and headed:
-        lo, hi = cfg.paddle_range(0)
-        print(
-            f"You play A1 (left side, upper region y in [{lo:.2f}, {hi:.2f}]). "
-            "W=up, S=down, ESC=quit."
-        )
+        if args.mode == "1v1":
+            print("You play A1 (left side, full height). W=up, S=down, ESC=quit.")
+        else:
+            lo, hi = cfg.paddle_range(0)
+            print(
+                f"You play A1 (left side, upper region y in [{lo:.2f}, {hi:.2f}]). "
+                "W=up, S=down, ESC=quit."
+            )
     for ep in range(args.episodes):
         obs, _ = env.reset(seed=ep)
         done = False

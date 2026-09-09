@@ -24,11 +24,13 @@ class PongEnv:
     metadata: ClassVar[dict] = {"render_modes": [None, "human"]}
 
     def __init__(self, config: Config = DEFAULT, render_mode=None, seed: int | None = None):
+        if config.mode not in ("1v1", "2v2"):
+            raise ValueError(f"unknown mode {config.mode!r}; expected '1v1' or '2v2'")
         self.cfg = config
         self.render_mode = render_mode
         self._rng = random.Random(seed)
         self._np_rng = np.random.default_rng(seed)
-        ids = list(config.agent_ids)[: config.n_agents]
+        ids = ["A1", "B1"] if config.mode == "1v1" else list(config.agent_ids)
         self.agent_ids: list[str] = ids
         self.action_space = spaces.Dict({a: spaces.Discrete(3) for a in ids})
         lo = np.array([-1.0, -2.0, -1.1, -1.0, -2.0, -2.0, -1.0, -2.0], dtype=np.float32)
@@ -46,8 +48,7 @@ class PongEnv:
         # Paddles start centered in their allowed ranges.
         self.paddles: dict[str, list[float]] = {}
         for a in self.agent_ids:
-            slot = self._slot(a)
-            lo, hi = self.cfg.paddle_range(slot)
+            lo, hi = self._allowed_range(a)
             y0 = max(lo, min(hi, 0.0))
             self.paddles[a] = [y0, 0.0]
         self.scores = {"A": 0, "B": 0}
@@ -57,6 +58,13 @@ class PongEnv:
 
     def _slot(self, agent: str) -> int:
         return 0 if agent in ("A1", "B1") else 1
+
+    def _allowed_range(self, agent: str) -> tuple[float, float]:
+        """Movement limits for a paddle center. 1v1 covers the full field."""
+        if self.cfg.mode == "1v1":
+            limit = 1.0 - self.cfg.paddle_height / 2.0
+            return (-limit, limit)
+        return self.cfg.paddle_range(self._slot(agent))
 
     def _side(self, agent: str) -> str:
         return "left" if agent.startswith("A") else "right"
@@ -84,7 +92,8 @@ class PongEnv:
             act = int(actions.get(a, STAY))
             y, vy = self.paddles[a]
             y, vy = physics.step_paddle(y, vy, act, cfg)
-            y = physics.clamp_paddle(y, cfg, self._slot(a))
+            lo, hi = self._allowed_range(a)
+            y = max(lo, min(hi, y))
             self.paddles[a] = [y, vy]
         px, py, vx, vy = self.ball
         px, py, vx, vy = physics.step_ball(px, py, vx, vy, cfg)
@@ -135,7 +144,7 @@ class PongEnv:
         if self._screen is None:
             pygame.init()
             self._screen = pygame.display.set_mode((self.cfg.screen_width, self.cfg.screen_height))
-            pygame.display.set_caption("marl-pong 2v2")
+            pygame.display.set_caption(f"marl-pong {self.cfg.mode}")
             self._clock = pygame.time.Clock()
         s = self._screen
         s.fill((10, 10, 18))
@@ -144,8 +153,15 @@ class PongEnv:
         import pygame as pg
 
         pg.draw.line(s, (60, 60, 80), (w // 2, 0), (w // 2, h), 2)
-        for slot, color in ((0, (40, 90, 40)), (1, (90, 40, 40))):
-            lo, hi = self.cfg.paddle_range(slot)
+        ranges = (
+            [self._allowed_range("A1")]
+            if self.cfg.mode == "1v1"
+            else [
+                self.cfg.paddle_range(0),
+                self.cfg.paddle_range(1),
+            ]
+        )
+        for (lo, hi), color in zip(ranges, ((40, 90, 40), (90, 40, 40))):
             _, y0 = self._to_px(0, lo)
             _, y1 = self._to_px(0, hi)
             pg.draw.line(s, color, (0, y0), (w, y0), 1)

@@ -9,18 +9,19 @@ mate_y, mate_vy]. Opponent positions excluded by design (TASK.md 3.4).
 
 import math
 import random
+from typing import ClassVar
 
 import numpy as np
 from gymnasium import spaces
 
 from . import physics
-from .config import Config, DEFAULT
+from .config import DEFAULT, Config
 
 STAY, UP, DOWN = 0, 1, 2
 
 
 class PongEnv:
-    metadata = {"render_modes": [None, "human"]}
+    metadata: ClassVar[dict] = {"render_modes": [None, "human"]}
 
     def __init__(self, config: Config = DEFAULT, render_mode=None, seed: int | None = None):
         self.cfg = config
@@ -90,7 +91,9 @@ class PongEnv:
         for a in self.agent_ids:
             side = self._side(a)
             if (side == "left" and vx < 0) or (side == "right" and vx > 0):
-                px, vx, vy, _ = physics.paddle_collision(px, py, vx, vy, self.paddles[a][0], side, cfg)
+                px, vx, vy, _ = physics.paddle_collision(
+                    px, py, vx, vy, self.paddles[a][0], side, cfg
+                )
         self.ball = [px, py, vx, vy]
         self.steps += 1
 
@@ -125,7 +128,7 @@ class PongEnv:
 
     def render(self):
         if self.render_mode != "human":
-            return None
+            return
         import pygame
 
         if self._screen is None:
@@ -166,7 +169,6 @@ class PongEnv:
         s.blit(txt, (w // 2 - txt.get_width() // 2, 10))
         pg.display.flip()
         self._clock.tick(self.cfg.fps)
-        return None
 
     def close(self):
         if self._screen is not None:

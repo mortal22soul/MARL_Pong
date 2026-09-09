@@ -48,7 +48,7 @@ def main() -> None:
                     actions[a] = 1 if human_up else (2 if human_down else 0)
                 else:
                     actions[a] = agents[a].act(o)
-            obs, rewards, terminated, truncated, info = env.step(actions)
+            obs, _rewards, terminated, truncated, info = env.step(actions)
             done = all(terminated.values()) or all(truncated.values())
             if not args.headless:
                 env.render()

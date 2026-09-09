@@ -25,13 +25,9 @@ class HeuristicAgent:
         self.team = team
 
     def act(self, obs: np.ndarray) -> int:
-        own_y, _, ball_x, ball_y, ball_vx = (
-            float(obs[0]),
-            float(obs[1]),
-            float(obs[2]),
-            float(obs[3]),
-            float(obs[4]),
-        )
+        own_y = float(obs[0])
+        ball_y = float(obs[3])
+        ball_vx = float(obs[4])
         approaching = (self.team == "A" and ball_vx < 0) or (self.team == "B" and ball_vx > 0)
         target = ball_y if approaching else 0.0
         if target < own_y - self.deadzone:

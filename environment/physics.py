@@ -21,7 +21,9 @@ def clamp_paddle(y: float, cfg: Config, slot: int) -> float:
     return max(lo, min(hi, y))
 
 
-def step_ball(px: float, py: float, vx: float, vy: float, cfg: Config) -> tuple[float, float, float, float]:
+def step_ball(
+    px: float, py: float, vx: float, vy: float, cfg: Config
+) -> tuple[float, float, float, float]:
     px += vx * cfg.dt
     py += vy * cfg.dt
     # Top/bottom walls at y = +/-1.

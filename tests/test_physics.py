@@ -1,5 +1,3 @@
-import math
-
 from environment import physics
 from environment.config import Config
 
@@ -7,24 +5,28 @@ CFG = Config()
 
 
 def test_wall_bounce_top():
-    px, py, vx, vy = physics.step_ball(0.0, -0.99, 0.0, -1.0, CFG)
+    _px, py, _vx, vy = physics.step_ball(0.0, -0.99, 0.0, -1.0, CFG)
     assert vy > 0
     assert py >= -1.0 + CFG.ball_radius - 1e-6
 
 
 def test_wall_bounce_bottom():
-    px, py, vx, vy = physics.step_ball(0.0, 0.99, 0.0, 1.0, CFG)
+    _px, _py, _vx, vy = physics.step_ball(0.0, 0.99, 0.0, 1.0, CFG)
     assert vy < 0
 
 
 def test_paddle_collision_left():
     y = 0.0
-    px, vx, vy, hit = physics.paddle_collision(-CFG.paddle_x_offset, 0.0, -1.0, 0.0, y, "left", CFG)
+    _px, vx, _vy, hit = physics.paddle_collision(
+        -CFG.paddle_x_offset, 0.0, -1.0, 0.0, y, "left", CFG
+    )
     assert hit and vx > 0
 
 
 def test_paddle_miss_no_hit():
-    px, vx, vy, hit = physics.paddle_collision(-CFG.paddle_x_offset, 0.9, -1.0, 0.0, 0.0, "left", CFG)
+    _px, _vx, _vy, hit = physics.paddle_collision(
+        -CFG.paddle_x_offset, 0.9, -1.0, 0.0, 0.0, "left", CFG
+    )
     assert not hit
 
 

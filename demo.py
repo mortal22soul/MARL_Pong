@@ -2,7 +2,7 @@
 
 import argparse
 
-from baselines.agents import HeuristicAgent
+from baselines.agents import HeuristicAgent, RandomAgent
 from environment.config import Config
 from environment.pong_env import PongEnv
 
@@ -13,13 +13,24 @@ def main() -> None:
     ap.add_argument("--human", action="store_true", help="control A1 with W/S keys")
     ap.add_argument("--episodes", type=int, default=3)
     ap.add_argument("--points", type=int, default=5)
+    ap.add_argument(
+        "--opponent",
+        choices=["heuristic", "random"],
+        default="heuristic",
+        help="Team B policy (random scores fast; heuristic defends near-perfectly).",
+    )
     args = ap.parse_args()
 
     import dataclasses
 
     cfg = dataclasses.replace(Config(), points_to_win=args.points)
     env = PongEnv(config=cfg, render_mode=None if args.headless else "human", seed=0)
-    agents = {a: HeuristicAgent(team=a[0]) for a in env.agent_ids}
+    agents = {}
+    for i, a in enumerate(env.agent_ids):
+        if a.startswith("B") and args.opponent == "random":
+            agents[a] = RandomAgent(seed=100 + i)
+        else:
+            agents[a] = HeuristicAgent(team=a[0])
 
     human_up = human_down = False
     for ep in range(args.episodes):

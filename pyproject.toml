@@ -8,6 +8,8 @@ dependencies = [
     "pygame-ce",
     "numpy",
     "torch", # CPU-only index pinned below; device="cpu" throughout
+    "imageio",
+    "imageio-ffmpeg", # --record gameplay footage
 ]
 
 [[tool.uv.index]]

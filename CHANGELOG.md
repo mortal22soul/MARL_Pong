@@ -7,6 +7,9 @@ ad-hoc pre-1.0 while the game is built ahead of the RL phase in `TASK.md`.
 ## [Unreleased]
 
 ### Added
+- Demo gameplay recording (`demo.py --record out.mp4`): headless capture via
+  a dummy SDL display, `--fps` override for fast capture; imageio +
+  imageio-ffmpeg dependencies.
 - Analysis module (`analysis/plots.py`): learning curves with seed spread,
   paddle-coverage heatmaps from trajectory dumps, teammate coverage-overlap
   sweep across checkpoints; matplotlib added as a dev dependency.

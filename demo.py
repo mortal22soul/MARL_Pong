@@ -1,6 +1,7 @@
 """Headed/headless demo: 4x heuristic paddles, optional human control of A1 (W/S)."""
 
 import argparse
+import os
 
 from baselines.agents import HeuristicAgent, RandomAgent
 from environment.config import Config
@@ -25,14 +26,31 @@ def main() -> None:
         default=None,
         help="checkpoint .pt: all agents play greedy (with --human, A1 stays yours).",
     )
+    ap.add_argument(
+        "--record",
+        default=None,
+        metavar="MP4",
+        help="write gameplay footage to this .mp4 (headless uses a dummy display).",
+    )
+    ap.add_argument("--fps", type=int, default=None, help="override render/capture fps")
     args = ap.parse_args()
     if args.human and args.headless:
         ap.error("--human needs a display; drop --headless to play.")
+    if args.record:
+        # Dummy video driver lets pygame build a real surface with no window.
+        os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 
     import dataclasses
 
     cfg = dataclasses.replace(Config(), points_to_win=args.points, mode=args.mode)
-    env = PongEnv(config=cfg, render_mode=None if args.headless else "human", seed=0)
+    if args.fps is not None:
+        cfg = dataclasses.replace(cfg, fps=args.fps)
+    recording = args.record is not None
+    env = PongEnv(
+        config=cfg,
+        render_mode="human" if (not args.headless or recording) else None,
+        seed=0,
+    )
     agents = {}
     for i, a in enumerate(env.agent_ids):
         lo, hi = env._allowed_range(a)
@@ -60,6 +78,11 @@ def main() -> None:
     headed = not args.headless
     if headed:
         env.render()  # initialize pygame display before any event polling
+    writer = None
+    if recording:
+        import imageio
+
+        writer = imageio.get_writer(args.record, fps=cfg.fps)
     if args.human and headed:
         if args.mode == "1v1":
             print("You play A1 (left side, full height). W=up, S=down, ESC=quit.")
@@ -100,9 +123,17 @@ def main() -> None:
                     actions[a] = agents[a].act(o)
             obs, _rewards, terminated, truncated, info = env.step(actions)
             done = all(terminated.values()) or all(truncated.values())
-            if not args.headless:
+            if not args.headless or recording:
                 env.render()
+            if recording:
+                import pygame
+
+                frame = pygame.surfarray.array3d(pygame.display.get_surface())
+                writer.append_data(frame.transpose(1, 0, 2))
         print(f"episode {ep}: scores={info['scores']} steps={info['steps']}")
+    if writer is not None:
+        writer.close()
+        print(f"footage written to {args.record}")
     env.close()
 
 

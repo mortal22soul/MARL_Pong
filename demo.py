@@ -33,11 +33,14 @@ def main() -> None:
             agents[a] = HeuristicAgent(team=a[0])
 
     human_up = human_down = False
+    headed = not args.headless
+    if headed:
+        env.render()  # initialize pygame display before any event polling
     for ep in range(args.episodes):
         obs, _ = env.reset(seed=ep)
         done = False
         while not done:
-            if args.human and not args.headless:
+            if headed:
                 import pygame
 
                 for e in pygame.event.get():
@@ -50,7 +53,7 @@ def main() -> None:
                             human_up = pressed
                         elif e.key == pygame.K_s:
                             human_down = pressed
-                        elif e.key == pygame.K_ESCAPE:
+                        elif e.key == pygame.K_ESCAPE and pressed:
                             env.close()
                             return
             actions = {}

@@ -9,6 +9,15 @@ ad-hoc pre-1.0 while the game is built ahead of the RL phase in `TASK.md`.
 ### Added
 - Central arena config (`environment/config.py`): normalized sim space,
   paddle-overlap parameter, point threshold, step cap.
+- Independent-PPO training (`agents/`, `experiments/`): per-agent
+  actor-critic MLPs, synchronized rollouts, GAE + clipped updates on CPU
+  (torch pinned to the CPU index); `exp_1v1_baseline.py` / `exp_2v2_main.py`
+  entry points, CSV logging, checkpoints, warm-start resume.
+- Deterministic evaluation (`evaluation/evaluate.py`): win rate, team
+  return, rally length, teammate specialization (mean/std/range + coverage
+  overlap), trajectory `.npz` dumps, cross-play vs heuristic/random teams.
+- Demo can play trained checkpoints (`--weights`), including human-vs-team.
+- Seed-0 trained models + logs + eval records under `results/`.
 - Pure physics helpers (`environment/physics.py`): inertial paddles, wall
   bounces, paddle reflection, scoring detection.
 - 2v2 `PongEnv` (`environment/pong_env.py`): dict multi-agent API, shared
@@ -22,7 +31,7 @@ ad-hoc pre-1.0 while the game is built ahead of the RL phase in `TASK.md`.
 - Adjustable modes: `1v1` (A1 vs B1, full-height paddles) and `2v2`
   (overlapping partial ranges) via `Config(mode=...)`.
 - Test suite (`tests/`): physics, observations, rewards, termination,
-  determinism, 1v1, escalation, and formation coverage (23 tests).
+  determinism, 1v1, escalation, formation, and PPO loop coverage (25 tests).
 
 ### Fixed
 - Demo initializes the pygame display before polling events (crashed human

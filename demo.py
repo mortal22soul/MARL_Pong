@@ -20,6 +20,11 @@ def main() -> None:
         help="Team B policy (random scores fast; heuristic defends near-perfectly).",
     )
     ap.add_argument("--mode", choices=["1v1", "2v2"], default="2v2")
+    ap.add_argument(
+        "--weights",
+        default=None,
+        help="checkpoint .pt: all agents play greedy (with --human, A1 stays yours).",
+    )
     args = ap.parse_args()
     if args.human and args.headless:
         ap.error("--human needs a display; drop --headless to play.")
@@ -36,6 +41,21 @@ def main() -> None:
             agents[a] = RandomAgent(seed=100 + i)
         else:
             agents[a] = HeuristicAgent(team=a[0], home=home)
+    trained = None
+    if args.weights:
+        import torch
+
+        from agents.multi_agent_ppo import IndependentPPO
+
+        state = torch.load(args.weights, map_location="cpu", weights_only=True)
+        if set(state) != set(env.agent_ids):
+            ap.error(
+                f"--weights is for {sorted(state)}, but --mode {args.mode} needs {env.agent_ids}"
+            )
+        trained = IndependentPPO(env.agent_ids)
+        for a in env.agent_ids:
+            trained.nets[a].load_state_dict(state[a])
+            trained.nets[a].eval()
 
     headed = not args.headless
     if headed:
@@ -74,6 +94,8 @@ def main() -> None:
             for a, o in obs.items():
                 if args.human and a == "A1" and headed:
                     actions[a] = human_act
+                elif trained is not None:
+                    actions[a] = trained.nets[a].greedy(o)
                 else:
                     actions[a] = agents[a].act(o)
             obs, _rewards, terminated, truncated, info = env.step(actions)

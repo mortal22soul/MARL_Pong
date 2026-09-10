@@ -7,6 +7,9 @@ ad-hoc pre-1.0 while the game is built ahead of the RL phase in `TASK.md`.
 ## [Unreleased]
 
 ### Added
+- Presentation deck (`report/marl_pong_presentation.pptx`, built by
+  `report/build_deck.js`): findings, figures, and eval numbers for the
+  final talk, with speaker notes.
 - Completed 3-seed protocol: fresh 2v2 runs at 1M steps (seeds 0-2) and 1v1
   at 300k (seeds 0-2), with a uniform 60-episode eval pass per run vs
   self / heuristic / random (`evaluation/eval_suite.py`).

@@ -3,10 +3,11 @@
 const pptxgen = require("pptxgenjs");
 
 const W = 13.33, H = 7.5, M = 0.5;
-// Palette derived from the game render: arena (10,10,18), team A (80,160,255), team B (255,120,90)
-const DARK = "0A0F1E", BG = "FFFFFF", PRIMARY = "1C2A4A", ACCENT = "50A0FF",
-  RED = "FF785A", TEXT = "182238", MUTED = "66718A", TINT = "EEF4FE",
-  DARKCARD = "111A30", DARKLINE = "2A3A5E", DARKTEXT = "E8EEFA", DARKMUTED = "8FA0C4";
+// Palette derived from the game render: team A (80,160,255), team B (255,120,90)
+// Light mode throughout: white background, navy primary, blue/red accents.
+const DARK = "FFFFFF", BG = "FFFFFF", PRIMARY = "1C2A4A", ACCENT = "2B7FFF",
+  RED = "E85D3F", TEXT = "182238", MUTED = "5B677F", TINT = "EEF4FE",
+  DARKCARD = "F5F7FA", DARKLINE = "D8DEE9", DARKTEXT = "182238", DARKMUTED = "5B677F";
 const F = "Arial";
 
 let p = new pptxgen();
@@ -39,7 +40,7 @@ function arena(slide, x, y, w, h, opts = {}) {
   slide.addShape(p.shapes.ROUNDED_RECTANGLE, { x: x + w * 0.05, y: py2, w: pw, h: ph, rectRadius: 0.02, fill: { color: "2B6CB0" } });
   slide.addShape(p.shapes.ROUNDED_RECTANGLE, { x: x + w * 0.95 - pw, y: py1, w: pw, h: ph, rectRadius: 0.02, fill: { color: RED } });
   slide.addShape(p.shapes.ROUNDED_RECTANGLE, { x: x + w * 0.95 - pw, y: py2, w: pw, h: ph, rectRadius: 0.02, fill: { color: "C24C38" } });
-  slide.addShape(p.shapes.OVAL, { x: x + w * 0.42, y: y + h * 0.48, w: 0.09, h: 0.09, fill: { color: "F2F2F2" } });
+  slide.addShape(p.shapes.OVAL, { x: x + w * 0.42, y: y + h * 0.48, w: 0.09, h: 0.09, fill: { color: PRIMARY } });
   slide.addText(opts.label || "", {
     x, y: y + h + 0.05, w, h: 0.3, align: "center", fontSize: 12, fontFace: F,
     color: opts.labelColor || MUTED, margin: 0,

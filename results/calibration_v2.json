@@ -1,8 +1,8 @@
 {
   "purpose": "scripted-only v2 calibration",
   "provenance": {
-    "generated_at_utc": "2026-09-30T15:24:12.915432+00:00",
-    "git_revision": "798644efb30d9e2f686b3afc47157723ee6655ce",
+    "generated_at_utc": "2026-09-30T15:51:04.357155+00:00",
+    "git_revision": "30b44e5efb7dfc6cb85b4b727fcbb39cd20c8053",
     "command": {
       "overlaps": "0.15,0.25,0.35,0.45",
       "speed_scales": "1.0,1.15",

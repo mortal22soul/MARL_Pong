@@ -138,9 +138,10 @@ The v2 random result is stronger than v1's `0.68 ± 0.24`, while the tracker
 remains a much stronger fixed policy. Team-A coverage overlap is `0.12 ±
 0.10`; this is evidence of positional differentiation only, not sufficient
 evidence of coordination by itself. The regenerated v2 evaluations add
-functional contact evidence: seed 1 allocates Team-A contacts evenly (149/149)
-across complementary impact bands, while seeds 0 and 2 allocate 78% and 70%
-of Team-A contacts to A1. Thus role allocation is present but not consistent
+functional contact evidence: seed 1 splits Team-A contacts evenly (149/149),
+with A2 handling more upper-region contacts and A1 more lower-region contacts.
+Seeds 0 and 2 allocate 78% and 70% of Team-A contacts to A1. Thus role
+allocation is present but not consistent
 across seeds or necessarily balanced. The evaluator also records each paddle's
 defense-time position and ball error, action distribution, contact count/share,
 contact allocation by upper/middle/lower impact band, and home-position

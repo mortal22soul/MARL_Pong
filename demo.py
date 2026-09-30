@@ -3,7 +3,6 @@
 import argparse
 import os
 
-from agents.policies import ActorCritic
 from baselines.agents import HeuristicAgent, RandomAgent
 from environment.config import Config
 from environment.pong_env import PongEnv
@@ -80,8 +79,7 @@ def main() -> None:
             )
         trained = IndependentPPO(env.agent_ids)
         for a in env.agent_ids:
-            sd = ActorCritic._load_state_dict_compat(state[a])
-            trained.nets[a].load_state_dict(sd)
+            trained.nets[a].load_checkpoint(state[a])
             trained.nets[a].eval()
 
     headed = not args.headless

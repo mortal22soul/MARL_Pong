@@ -32,7 +32,7 @@ taxonomy (value-based / policy-gradient / search-based) and challenge framing
 |---|---|---|
 | SB3-wrapped or custom PPO (open decision, §6) | Custom PyTorch PPO — option (b) | SB3's single-agent rollout buffer coupling made option (a) reverse-engineering, not engineering |
 | MLflow tracking | Per-iteration CSV logs | Zero-dependency, sufficient for 3-seed aggregation in `analysis/`; MLflow was process overhead, not signal |
-| Paddle overlap swept and frozen before training | Kept at 0.4 (temporary default) | Heuristic sweep never re-opened; **this is a protocol caveat** — the frozen-before-training methodology was not executed |
+| Paddle overlap swept and frozen before training | v1 kept 0.4; v2 used scripted-only sweep and froze 0.15 / 1.15 speed scale | v1 remains a protocol caveat. v2 corrects it with `results/calibration_v2.json`; v1 and v2 are separate conditions. |
 
 ## 3. Experimental protocol
 
@@ -130,25 +130,31 @@ After the original v1 report, a versioned v2 condition was run with the
 predeclared scripted-only calibration profile: `paddle_overlap=0.15`, ball
 speed scale 1.15, and symmetric closest-paddle collision selection. Three
 fresh 1M-step 2v2 seeds were evaluated with 60 deterministic episodes each.
-The standard Team-A-versus-Team-B baseline results are: random `0.86 ± 0.07`
-Team-A win rate, reactive tracker `0.04 ± 0.08`, and self-play `0.44 ± 0.16`
+The standard Team-A-versus-Team-B baseline results are: random `0.81 ± 0.03`
+Team-A win rate, reactive tracker `0.07 ± 0.09`, and self-play `0.44 ± 0.10`
 for Team A versus `0.44 ± 0.15` for Team B (all `mean ± sample std`).
 
 The v2 random result is stronger than v1's `0.68 ± 0.24`, while the tracker
-remains a much stronger fixed policy. Team-A coverage overlap is `0.13 ±
-0.09`; this is evidence of positional differentiation only, not sufficient
-evidence of coordination by itself. The v2 evaluator therefore records each
-paddle's defense-time position and ball error, action distribution, contact
-count/share, contact allocation by upper/middle/lower impact band, and
-home-position separation. Future coordination claims should use these
-functional measures alongside heatmaps.
+remains a much stronger fixed policy. Team-A coverage overlap is `0.12 ±
+0.10`; this is evidence of positional differentiation only, not sufficient
+evidence of coordination by itself. The regenerated v2 evaluations add
+functional contact evidence: seed 1 allocates Team-A contacts evenly (149/149)
+across complementary impact bands, while seeds 0 and 2 allocate 78% and 70%
+of Team-A contacts to A1. Thus role allocation is present but not consistent
+across seeds or necessarily balanced. The evaluator also records each paddle's
+defense-time position and ball error, action distribution, contact count/share,
+contact allocation by upper/middle/lower impact band, and home-position
+separation. Future coordination claims should use these functional measures
+alongside heatmaps.
 
 An earlier draft incorrectly pooled paired side-swapped baseline evaluations
 with the three standard seeds, creating a six-row aggregate and an apparent
 50% tracker win rate. Those paired games are diagnostic side tests, not extra
 independent seeds. The corrected aggregator excludes them from headline
-tables. Cross-play and frozen-opponent experiments are now implemented as the
-next tests of seed-specific co-adaptation and non-stationarity.
+tables. A 60-episode 3x3 cross-play matrix now shows seed-specific policy
+compatibility: Team-A seed 2 wins 0.63 and 0.65 against Team-B seeds 0 and 1,
+whereas Team-A seed 0 loses to every tested Team B. Frozen-opponent experiments
+are implemented as the next test of non-stationarity.
 
 - **Non-stationarity dominates the dynamics.** The oscillating curves and
   the coin-flip team asymmetry at 1M are exactly the challenge Li et al.
@@ -165,9 +171,9 @@ next tests of seed-specific co-adaptation and non-stationarity.
   observation ablation to test whether coordination survives full information.
 - **Honest limitations of this evidence:** 3 seeds; the checkpoint sweep
   probes use shortened (500-step) episodes, so its overlap trend is indicative,
-  not directly comparable to the 60-episode eval numbers; paddle overlap was
-  never swept (see §2 deviations), so the coordination difficulty was fixed
-  by an unvalidated default.
+  not directly comparable to the 60-episode eval numbers. The original v1
+  condition used an unvalidated overlap default; v2 corrects that condition
+  but is still limited to three seeds.
 
 ## 6. Limitations
 
@@ -175,7 +181,8 @@ next tests of seed-specific co-adaptation and non-stationarity.
   geometry/coverage confounds it).
 - No centralized-critic baselines (MAPPO/QMIX/MADDPG), no parameter-sharing
   ablation, no larger teams — out of scope by design (TASK.md §11).
-- Simplified 2D abstraction; paddle overlap was not swept before training.
+- Simplified 2D abstraction. The original v1 overlap was not swept; the
+  subsequent v2 condition used a scripted-only calibration and frozen profile.
 - Single hardware budget (CPU), fixed hyperparameters per condition.
 
 ## References

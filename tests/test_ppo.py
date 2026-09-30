@@ -3,9 +3,11 @@
 import os
 
 import numpy as np
+import torch
 
 from agents.frozen_policy import FrozenPolicy
 from agents.multi_agent_ppo import IndependentPPO, PPOConfig, compute_gae
+from agents.policies import ActorCritic
 from baselines.agents import RandomAgent
 from environment.config import Config
 from environment.pong_env import PongEnv
@@ -47,6 +49,26 @@ def test_frozen_policy_replays_checkpoint_network():
     frozen = FrozenPolicy(trainer.nets["B1"].state_dict())
     action = frozen.act(np.zeros(8, dtype=np.float32))
     assert action in (0, 1, 2)
+
+
+def test_legacy_checkpoint_preserves_raw_observation_semantics():
+    source = ActorCritic(agent_id=None)
+    legacy = {}
+    for key, value in source.state_dict().items():
+        if key.startswith("actor_torso."):
+            legacy[f"torso.{key.removeprefix('actor_torso.')}"] = value
+        elif key.startswith(("logits.", "value_head.")):
+            legacy[key] = value
+    obs = torch.zeros(1, 8)
+    expected_logits = source.logits(source.actor_torso(obs))
+    expected_value = source.value_head(source.actor_torso(obs)).squeeze(-1)
+
+    restored = ActorCritic(agent_id="A1")
+    assert restored.load_checkpoint(legacy)
+    logits, value = restored(obs)
+    assert restored.agent_id is None
+    assert torch.allclose(logits, expected_logits)
+    assert torch.allclose(value, expected_value)
 
 
 def test_ppo_fixed_opponent_and_exact_partial_rollout():

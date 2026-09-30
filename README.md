@@ -102,12 +102,12 @@ The calibrated v2 environment uses symmetric closest-paddle collision
 selection, `paddle_overlap=0.15`, and a 1.15 ball-speed scale. Standard
 Team-A-versus-Team-B evaluation gives:
 
-- **vs random:** `0.86 ± 0.07` Team-A win rate, up from v1's `0.68 ± 0.24`.
-- **self-play:** `0.44 ± 0.16` / `0.44 ± 0.15`, balanced on average but
+- **vs random:** `0.81 ± 0.03` Team-A win rate, up from v1's `0.68 ± 0.24`.
+- **self-play:** `0.44 ± 0.10` / `0.44 ± 0.15`, balanced on average but
   asymmetric by seed.
-- **vs reactive tracker:** `0.04 ± 0.08`; the scripted controller remains a
+- **vs reactive tracker:** `0.07 ± 0.09`; the scripted controller remains a
   strong fixed reference.
-- **specialization:** Team-A coverage overlap `0.13 ± 0.09`, lower than v1's
+- **specialization:** Team-A coverage overlap `0.12 ± 0.10`, lower than v1's
   `0.20 ± 0.17`, but overlap alone is not a coordination claim. Evaluation
   now also records home separation, defense-time position/error, action
   distributions, and contact shares per paddle.
@@ -227,6 +227,7 @@ For side-balanced scripted evaluation of a full-team run:
 uv run python evaluation/eval_suite.py \
   --runs v2_2v2_seed0_1M v2_2v2_seed1_1M v2_2v2_seed2_1M --episodes 60 --paired \
   --env-version v2 --paddle-overlap 0.15 --ball-speed-scale 1.15
+```
 
 Cross-play tests whether a learned Team A from one seed generalizes against a
 learned Team B from another rather than only its co-trained counterpart:
@@ -259,7 +260,6 @@ uv run python evaluation/evaluate.py \
   --weights results/models/v2_frozen_B_seed0/final.pt \
   --opponent checkpoint --opponent-weights results/models/v2_2v2_seed2_1M/final.pt \
   --episodes 60
-```
 ```
 
 ## Layout

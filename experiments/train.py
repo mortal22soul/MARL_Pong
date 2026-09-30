@@ -93,7 +93,7 @@ def make_fixed_agents(
         needed = [a for a in env.agent_ids if a.startswith(opponent_team)]
         if not set(needed) <= set(state):
             raise ValueError(f"checkpoint does not contain frozen opponent agents {needed}")
-        return {a: FrozenPolicy(state[a]) for a in needed}
+        return {a: FrozenPolicy(state[a], agent_id=a) for a in needed}
     out = {}
     for i, a in enumerate(a for a in env.agent_ids if a.startswith(opponent_team)):
         lo, hi = env._allowed_range(a)
@@ -171,12 +171,9 @@ def main(argv=None) -> str:
     if args.warm_start_weights:
         import torch
 
-        from agents.policies import ActorCritic
-
         state = torch.load(args.warm_start_weights, map_location="cpu", weights_only=True)
         for a in trainer.ids:
-            sd = ActorCritic._load_state_dict_compat(state[a])
-            trainer.nets[a].load_state_dict(sd)
+            trainer.nets[a].load_checkpoint(state[a])
         print(
             f"warm-started model weights from {args.warm_start_weights}; optimizer state is fresh"
         )

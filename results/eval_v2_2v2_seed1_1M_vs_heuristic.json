@@ -1,44 +1,140 @@
 {
   "mode": "2v2",
   "episodes": 60,
-  "win_rate_A": 0.0,
-  "win_rate_B": 0.9,
-  "draw_rate": 0.1,
-  "mean_return_A": -3.0166666666666666,
-  "var_return_A": 2.9163888888888883,
-  "mean_ep_len": 1832.9833333333333,
+  "win_rate_A": 0.03333333333333333,
+  "win_rate_B": 0.8833333333333333,
+  "draw_rate": 0.08333333333333333,
+  "mean_return_A": -2.65,
+  "var_return_A": 3.0608333333333344,
+  "mean_ep_len": 1851.1833333333334,
   "opponent": "heuristic",
   "opponent_team": "B",
   "specialization": {
     "A": {
       "A1": {
-        "mean_y": 0.2757948338985443,
-        "std_y": 0.3945823907852173,
+        "mean_y": 0.2713741064071655,
+        "std_y": 0.39651262760162354,
         "min_y": -0.12449999898672104,
         "max_y": 0.8299999833106995
       },
       "A2": {
-        "mean_y": -0.3101380467414856,
-        "std_y": 0.3761827051639557,
+        "mean_y": -0.35220834612846375,
+        "std_y": 0.3830995559692383,
         "min_y": -0.8299999833106995,
         "max_y": 0.12449999898672104
       },
-      "coverage_overlap": 0.19661935460406077
+      "coverage_overlap": 0.18131645524034176,
+      "home_separation": 0.6235824525356293
     },
     "B": {
       "B1": {
-        "mean_y": 0.26301681995391846,
-        "std_y": 0.239256352186203,
+        "mean_y": 0.2644367516040802,
+        "std_y": 0.24204564094543457,
         "min_y": -0.12449999898672104,
         "max_y": 0.8299999833106995
       },
       "B2": {
-        "mean_y": -0.25823092460632324,
-        "std_y": 0.22967877984046936,
+        "mean_y": -0.26890942454338074,
+        "std_y": 0.23423390090465546,
         "min_y": -0.8299999833106995,
         "max_y": 0.12449999898672104
       },
-      "coverage_overlap": 0.1790614571872812
+      "coverage_overlap": 0.18345022553141685,
+      "home_separation": 0.5333461761474609
+    }
+  },
+  "behavior": {
+    "A1": {
+      "action_probs": [
+        0.1933718072224073,
+        0.44724545560947504,
+        0.3593827371681177
+      ],
+      "defending_mean_y": 0.3246425102743529,
+      "defending_ball_error": 0.44778635538576783,
+      "defending_samples": 60670,
+      "contacts": 183,
+      "contacts_per_episode": 3.05,
+      "contact_regions": {
+        "upper": 0,
+        "middle": 99,
+        "lower": 84
+      },
+      "contact_region_share": {
+        "upper": 0.0,
+        "middle": 0.5409836065573771,
+        "lower": 0.45901639344262296
+      },
+      "team_contact_share": 0.4790575916230366
+    },
+    "A2": {
+      "action_probs": [
+        0.5470915000315114,
+        0.20596735421487156,
+        0.24694114575361706
+      ],
+      "defending_mean_y": -0.3389005626139864,
+      "defending_ball_error": 0.4235019333461574,
+      "defending_samples": 60670,
+      "contacts": 199,
+      "contacts_per_episode": 3.316666666666667,
+      "contact_regions": {
+        "upper": 103,
+        "middle": 96,
+        "lower": 0
+      },
+      "contact_region_share": {
+        "upper": 0.5175879396984925,
+        "middle": 0.4824120603015075,
+        "lower": 0.0
+      },
+      "team_contact_share": 0.5209424083769634
+    },
+    "B1": {
+      "action_probs": [
+        0.5506747936004898,
+        0.2901837563360373,
+        0.1591414500634729
+      ],
+      "defending_mean_y": 0.18099159983207616,
+      "defending_ball_error": 0.24754815526317236,
+      "defending_samples": 50401,
+      "contacts": 222,
+      "contacts_per_episode": 3.7,
+      "contact_regions": {
+        "upper": 0,
+        "middle": 105,
+        "lower": 117
+      },
+      "contact_region_share": {
+        "upper": 0.0,
+        "middle": 0.47297297297297297,
+        "lower": 0.527027027027027
+      },
+      "team_contact_share": 0.4879120879120879
+    },
+    "B2": {
+      "action_probs": [
+        0.565287068631776,
+        0.15484689973080282,
+        0.27986603163742113
+      ],
+      "defending_mean_y": -0.18760331649308232,
+      "defending_ball_error": 0.24669811392624386,
+      "defending_samples": 50401,
+      "contacts": 233,
+      "contacts_per_episode": 3.8833333333333333,
+      "contact_regions": {
+        "upper": 132,
+        "middle": 101,
+        "lower": 0
+      },
+      "contact_region_share": {
+        "upper": 0.5665236051502146,
+        "middle": 0.4334763948497854,
+        "lower": 0.0
+      },
+      "team_contact_share": 0.512087912087912
     }
   },
   "run": "v2_2v2_seed1_1M"

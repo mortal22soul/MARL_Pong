@@ -260,4 +260,4 @@ class IndependentPPO:
     def load(self, path: str) -> None:
         sd = torch.load(path, map_location="cpu", weights_only=True)
         for a, n in self.nets.items():
-            n.load_state_dict(sd[a])
+            n.load_checkpoint(sd[a])

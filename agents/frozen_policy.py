@@ -10,7 +10,7 @@ from .policies import ActorCritic
 class FrozenPolicy:
     def __init__(self, state_dict: dict, agent_id: str | None = None):
         self.net = ActorCritic(agent_id=agent_id)
-        self.net.load_state_dict(state_dict)
+        self.net.load_checkpoint(state_dict)
         self.net.eval()
 
     def act(self, obs: np.ndarray) -> int:

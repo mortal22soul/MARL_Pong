@@ -1,8 +1,8 @@
 {
   "purpose": "scripted-only v2 calibration",
   "provenance": {
-    "generated_at_utc": "unknown (generated before provenance support)",
-    "git_revision": "unknown (generated before provenance support)",
+    "generated_at_utc": "2026-09-30T15:24:12.915432+00:00",
+    "git_revision": "798644efb30d9e2f686b3afc47157723ee6655ce",
     "command": {
       "overlaps": "0.15,0.25,0.35,0.45",
       "speed_scales": "1.0,1.15",
@@ -27,12 +27,14 @@
         "paddle_width": 0.03,
         "paddle_max_speed": 1.6,
         "paddle_accel": 12.0,
+        "paddle_brake_accel": 24.0,
         "paddle_overlap": 0.15,
         "paddle_x_offset": 0.92,
         "points_to_win": 5,
         "max_steps": 2000,
         "reward_mode": "point_only",
         "hit_reward": 0.05,
+        "team_hit_reward": 0.0,
         "mode": "2v2",
         "screen_width": 800,
         "screen_height": 600,
@@ -49,34 +51,34 @@
           "team_A": "range",
           "team_B": "range",
           "episodes": 60,
-          "win_A": 0.55,
-          "win_B": 0.43333333333333335,
-          "draw": 0.016666666666666666,
-          "mean_points_A": 3.75,
-          "mean_points_B": 3.6166666666666667,
-          "mean_length": 1367.0166666666667,
+          "win_A": 0.48333333333333334,
+          "win_B": 0.48333333333333334,
+          "draw": 0.03333333333333333,
+          "mean_points_A": 3.683333333333333,
+          "mean_points_B": 3.7333333333333334,
+          "mean_length": 1394.95,
           "mean_contacts": {
-            "A1": 1.7666666666666666,
-            "A2": 1.3333333333333333,
-            "B1": 1.4166666666666667,
-            "B2": 1.4333333333333333
+            "A1": 1.7,
+            "A2": 1.4666666666666666,
+            "B1": 1.6333333333333333,
+            "B2": 1.3833333333333333
           }
         },
         {
           "team_A": "reactive",
           "team_B": "reactive",
           "episodes": 60,
-          "win_A": 0.18333333333333332,
-          "win_B": 0.15,
-          "draw": 0.6666666666666666,
-          "mean_points_A": 0.18333333333333332,
-          "mean_points_B": 0.15,
+          "win_A": 0.05,
+          "win_B": 0.016666666666666666,
+          "draw": 0.9333333333333333,
+          "mean_points_A": 0.05,
+          "mean_points_B": 0.016666666666666666,
           "mean_length": 2000.0,
           "mean_contacts": {
-            "A1": 3.1166666666666667,
-            "A2": 3.5833333333333335,
-            "B1": 3.2,
-            "B2": 3.566666666666667
+            "A1": 2.933333333333333,
+            "A2": 3.283333333333333,
+            "B1": 3.216666666666667,
+            "B2": 3.0166666666666666
           }
         },
         {
@@ -90,10 +92,10 @@
           "mean_points_B": 0.0,
           "mean_length": 2000.0,
           "mean_contacts": {
-            "A1": 4.833333333333333,
-            "A2": 4.716666666666667,
-            "B1": 4.933333333333334,
-            "B2": 4.616666666666666
+            "A1": 4.683333333333334,
+            "A2": 5.05,
+            "B1": 4.683333333333334,
+            "B2": 5.116666666666666
           }
         },
         {
@@ -103,14 +105,14 @@
           "win_A": 1.0,
           "win_B": 0.0,
           "draw": 0.0,
-          "mean_points_A": 4.683333333333334,
+          "mean_points_A": 4.516666666666667,
           "mean_points_B": 0.0,
-          "mean_length": 1406.4166666666667,
+          "mean_length": 1433.8166666666666,
           "mean_contacts": {
-            "A1": 2.75,
-            "A2": 2.533333333333333,
-            "B1": 1.5833333333333333,
-            "B2": 1.1833333333333333
+            "A1": 2.6333333333333333,
+            "A2": 2.6666666666666665,
+            "B1": 1.4666666666666666,
+            "B2": 1.4333333333333333
           }
         }
       ]
@@ -131,12 +133,14 @@
         "paddle_width": 0.03,
         "paddle_max_speed": 1.6,
         "paddle_accel": 12.0,
+        "paddle_brake_accel": 24.0,
         "paddle_overlap": 0.15,
         "paddle_x_offset": 0.92,
         "points_to_win": 5,
         "max_steps": 2000,
         "reward_mode": "point_only",
         "hit_reward": 0.05,
+        "team_hit_reward": 0.0,
         "mode": "2v2",
         "screen_width": 800,
         "screen_height": 600,
@@ -153,17 +157,17 @@
           "team_A": "range",
           "team_B": "range",
           "episodes": 60,
-          "win_A": 0.5166666666666667,
-          "win_B": 0.48333333333333334,
-          "draw": 0.0,
-          "mean_points_A": 3.7666666666666666,
-          "mean_points_B": 3.783333333333333,
-          "mean_length": 1232.85,
+          "win_A": 0.5833333333333334,
+          "win_B": 0.4,
+          "draw": 0.016666666666666666,
+          "mean_points_A": 4.0,
+          "mean_points_B": 3.6666666666666665,
+          "mean_length": 1283.1333333333334,
           "mean_contacts": {
-            "A1": 1.85,
-            "A2": 1.4166666666666667,
-            "B1": 1.6,
-            "B2": 1.4333333333333333
+            "A1": 1.8666666666666667,
+            "A2": 1.65,
+            "B1": 1.7166666666666666,
+            "B2": 1.4166666666666667
           }
         },
         {
@@ -171,16 +175,16 @@
           "team_B": "reactive",
           "episodes": 60,
           "win_A": 0.31666666666666665,
-          "win_B": 0.36666666666666664,
-          "draw": 0.31666666666666665,
-          "mean_points_A": 0.6333333333333333,
-          "mean_points_B": 0.6666666666666666,
+          "win_B": 0.4,
+          "draw": 0.2833333333333333,
+          "mean_points_A": 0.5,
+          "mean_points_B": 0.5833333333333334,
           "mean_length": 2000.0,
           "mean_contacts": {
-            "A1": 4.116666666666666,
-            "A2": 4.6,
-            "B1": 4.1,
-            "B2": 4.7
+            "A1": 4.2,
+            "A2": 4.316666666666666,
+            "B1": 4.166666666666667,
+            "B2": 4.516666666666667
           }
         },
         {
@@ -194,10 +198,10 @@
           "mean_points_B": 0.0,
           "mean_length": 2000.0,
           "mean_contacts": {
-            "A1": 5.733333333333333,
-            "A2": 5.783333333333333,
-            "B1": 5.483333333333333,
-            "B2": 5.983333333333333
+            "A1": 5.433333333333334,
+            "A2": 5.983333333333333,
+            "B1": 5.333333333333333,
+            "B2": 6.016666666666667
           }
         },
         {
@@ -207,14 +211,14 @@
           "win_A": 1.0,
           "win_B": 0.0,
           "draw": 0.0,
-          "mean_points_A": 4.866666666666666,
-          "mean_points_B": 0.016666666666666666,
-          "mean_length": 1157.8833333333334,
+          "mean_points_A": 4.933333333333334,
+          "mean_points_B": 0.03333333333333333,
+          "mean_length": 1311.8166666666666,
           "mean_contacts": {
-            "A1": 2.433333333333333,
-            "A2": 2.533333333333333,
-            "B1": 1.25,
-            "B2": 1.1166666666666667
+            "A1": 2.85,
+            "A2": 2.75,
+            "B1": 1.45,
+            "B2": 1.55
           }
         }
       ]
@@ -235,12 +239,14 @@
         "paddle_width": 0.03,
         "paddle_max_speed": 1.6,
         "paddle_accel": 12.0,
+        "paddle_brake_accel": 24.0,
         "paddle_overlap": 0.25,
         "paddle_x_offset": 0.92,
         "points_to_win": 5,
         "max_steps": 2000,
         "reward_mode": "point_only",
         "hit_reward": 0.05,
+        "team_hit_reward": 0.0,
         "mode": "2v2",
         "screen_width": 800,
         "screen_height": 600,
@@ -257,34 +263,34 @@
           "team_A": "range",
           "team_B": "range",
           "episodes": 60,
-          "win_A": 0.5166666666666667,
-          "win_B": 0.4666666666666667,
+          "win_A": 0.45,
+          "win_B": 0.5333333333333333,
           "draw": 0.016666666666666666,
-          "mean_points_A": 3.8,
-          "mean_points_B": 3.8333333333333335,
-          "mean_length": 1415.8333333333333,
+          "mean_points_A": 3.45,
+          "mean_points_B": 3.65,
+          "mean_length": 1475.3833333333334,
           "mean_contacts": {
-            "A1": 1.75,
-            "A2": 1.45,
-            "B1": 1.6833333333333333,
-            "B2": 1.35
+            "A1": 1.95,
+            "A2": 1.6666666666666667,
+            "B1": 1.85,
+            "B2": 1.7333333333333334
           }
         },
         {
           "team_A": "reactive",
           "team_B": "reactive",
           "episodes": 60,
-          "win_A": 0.05,
-          "win_B": 0.05,
-          "draw": 0.9,
-          "mean_points_A": 0.05,
-          "mean_points_B": 0.05,
+          "win_A": 0.0,
+          "win_B": 0.03333333333333333,
+          "draw": 0.9666666666666667,
+          "mean_points_A": 0.0,
+          "mean_points_B": 0.03333333333333333,
           "mean_length": 2000.0,
           "mean_contacts": {
-            "A1": 3.0833333333333335,
-            "A2": 3.35,
-            "B1": 3.216666666666667,
-            "B2": 3.183333333333333
+            "A1": 2.9833333333333334,
+            "A2": 3.2666666666666666,
+            "B1": 2.9833333333333334,
+            "B2": 3.216666666666667
           }
         },
         {
@@ -299,9 +305,9 @@
           "mean_length": 2000.0,
           "mean_contacts": {
             "A1": 4.733333333333333,
-            "A2": 4.7,
-            "B1": 4.633333333333334,
-            "B2": 4.9
+            "A2": 4.883333333333334,
+            "B1": 4.733333333333333,
+            "B2": 4.966666666666667
           }
         },
         {
@@ -311,14 +317,14 @@
           "win_A": 1.0,
           "win_B": 0.0,
           "draw": 0.0,
-          "mean_points_A": 4.666666666666667,
+          "mean_points_A": 4.616666666666666,
           "mean_points_B": 0.0,
-          "mean_length": 1411.9333333333334,
+          "mean_length": 1397.0333333333333,
           "mean_contacts": {
-            "A1": 2.816666666666667,
-            "A2": 2.3666666666666667,
-            "B1": 1.2833333333333334,
-            "B2": 1.4333333333333333
+            "A1": 2.5833333333333335,
+            "A2": 2.6666666666666665,
+            "B1": 1.3166666666666667,
+            "B2": 1.4833333333333334
           }
         }
       ]
@@ -339,12 +345,332 @@
         "paddle_width": 0.03,
         "paddle_max_speed": 1.6,
         "paddle_accel": 12.0,
+        "paddle_brake_accel": 24.0,
         "paddle_overlap": 0.25,
         "paddle_x_offset": 0.92,
         "points_to_win": 5,
         "max_steps": 2000,
         "reward_mode": "point_only",
         "hit_reward": 0.05,
+        "team_hit_reward": 0.0,
+        "mode": "2v2",
+        "screen_width": 800,
+        "screen_height": 600,
+        "fps": 60,
+        "agent_ids": [
+          "A1",
+          "A2",
+          "B1",
+          "B2"
+        ]
+      },
+      "games": [
+        {
+          "team_A": "range",
+          "team_B": "range",
+          "episodes": 60,
+          "win_A": 0.55,
+          "win_B": 0.4166666666666667,
+          "draw": 0.03333333333333333,
+          "mean_points_A": 3.9,
+          "mean_points_B": 3.6166666666666667,
+          "mean_length": 1299.1333333333334,
+          "mean_contacts": {
+            "A1": 1.9333333333333333,
+            "A2": 1.7,
+            "B1": 1.8833333333333333,
+            "B2": 1.4666666666666666
+          }
+        },
+        {
+          "team_A": "reactive",
+          "team_B": "reactive",
+          "episodes": 60,
+          "win_A": 0.2833333333333333,
+          "win_B": 0.4166666666666667,
+          "draw": 0.3,
+          "mean_points_A": 0.4666666666666667,
+          "mean_points_B": 0.6333333333333333,
+          "mean_length": 2000.0,
+          "mean_contacts": {
+            "A1": 3.9833333333333334,
+            "A2": 4.766666666666667,
+            "B1": 4.416666666666667,
+            "B2": 4.4
+          }
+        },
+        {
+          "team_A": "predictive",
+          "team_B": "predictive",
+          "episodes": 60,
+          "win_A": 0.0,
+          "win_B": 0.0,
+          "draw": 1.0,
+          "mean_points_A": 0.0,
+          "mean_points_B": 0.0,
+          "mean_length": 2000.0,
+          "mean_contacts": {
+            "A1": 5.1,
+            "A2": 6.366666666666666,
+            "B1": 5.116666666666666,
+            "B2": 6.366666666666666
+          }
+        },
+        {
+          "team_A": "reactive",
+          "team_B": "random",
+          "episodes": 60,
+          "win_A": 1.0,
+          "win_B": 0.0,
+          "draw": 0.0,
+          "mean_points_A": 4.933333333333334,
+          "mean_points_B": 0.0,
+          "mean_length": 1277.2833333333333,
+          "mean_contacts": {
+            "A1": 2.7666666666666666,
+            "A2": 2.7333333333333334,
+            "B1": 1.4833333333333334,
+            "B2": 1.3833333333333333
+          }
+        }
+      ]
+    },
+    {
+      "config": {
+        "env_version": "v2",
+        "collision_resolution": "closest_paddle",
+        "dt": 0.016666666666666666,
+        "serve_speed_min": 0.7,
+        "serve_speed_max": 1.0,
+        "ball_speed_max": 1.6,
+        "serve_angle_deg_max": 35.0,
+        "ball_radius": 0.025,
+        "hit_speedup": 1.03,
+        "paddle_smash_factor": 0.35,
+        "paddle_height": 0.34,
+        "paddle_width": 0.03,
+        "paddle_max_speed": 1.6,
+        "paddle_accel": 12.0,
+        "paddle_brake_accel": 24.0,
+        "paddle_overlap": 0.35,
+        "paddle_x_offset": 0.92,
+        "points_to_win": 5,
+        "max_steps": 2000,
+        "reward_mode": "point_only",
+        "hit_reward": 0.05,
+        "team_hit_reward": 0.0,
+        "mode": "2v2",
+        "screen_width": 800,
+        "screen_height": 600,
+        "fps": 60,
+        "agent_ids": [
+          "A1",
+          "A2",
+          "B1",
+          "B2"
+        ]
+      },
+      "games": [
+        {
+          "team_A": "range",
+          "team_B": "range",
+          "episodes": 60,
+          "win_A": 0.5166666666666667,
+          "win_B": 0.4166666666666667,
+          "draw": 0.06666666666666667,
+          "mean_points_A": 3.6333333333333333,
+          "mean_points_B": 3.3666666666666667,
+          "mean_length": 1412.4333333333334,
+          "mean_contacts": {
+            "A1": 1.9333333333333333,
+            "A2": 1.6833333333333333,
+            "B1": 1.5666666666666667,
+            "B2": 1.7
+          }
+        },
+        {
+          "team_A": "reactive",
+          "team_B": "reactive",
+          "episodes": 60,
+          "win_A": 0.0,
+          "win_B": 0.03333333333333333,
+          "draw": 0.9666666666666667,
+          "mean_points_A": 0.0,
+          "mean_points_B": 0.03333333333333333,
+          "mean_length": 2000.0,
+          "mean_contacts": {
+            "A1": 2.9833333333333334,
+            "A2": 3.15,
+            "B1": 3.1,
+            "B2": 3.033333333333333
+          }
+        },
+        {
+          "team_A": "predictive",
+          "team_B": "predictive",
+          "episodes": 60,
+          "win_A": 0.0,
+          "win_B": 0.0,
+          "draw": 1.0,
+          "mean_points_A": 0.0,
+          "mean_points_B": 0.0,
+          "mean_length": 2000.0,
+          "mean_contacts": {
+            "A1": 4.666666666666667,
+            "A2": 4.733333333333333,
+            "B1": 4.566666666666666,
+            "B2": 4.966666666666667
+          }
+        },
+        {
+          "team_A": "reactive",
+          "team_B": "random",
+          "episodes": 60,
+          "win_A": 0.9833333333333333,
+          "win_B": 0.0,
+          "draw": 0.016666666666666666,
+          "mean_points_A": 4.633333333333334,
+          "mean_points_B": 0.0,
+          "mean_length": 1358.0833333333333,
+          "mean_contacts": {
+            "A1": 2.6,
+            "A2": 2.4,
+            "B1": 1.3666666666666667,
+            "B2": 1.15
+          }
+        }
+      ]
+    },
+    {
+      "config": {
+        "env_version": "v2",
+        "collision_resolution": "closest_paddle",
+        "dt": 0.016666666666666666,
+        "serve_speed_min": 0.8049999999999999,
+        "serve_speed_max": 1.15,
+        "ball_speed_max": 1.8399999999999999,
+        "serve_angle_deg_max": 35.0,
+        "ball_radius": 0.025,
+        "hit_speedup": 1.03,
+        "paddle_smash_factor": 0.35,
+        "paddle_height": 0.34,
+        "paddle_width": 0.03,
+        "paddle_max_speed": 1.6,
+        "paddle_accel": 12.0,
+        "paddle_brake_accel": 24.0,
+        "paddle_overlap": 0.35,
+        "paddle_x_offset": 0.92,
+        "points_to_win": 5,
+        "max_steps": 2000,
+        "reward_mode": "point_only",
+        "hit_reward": 0.05,
+        "team_hit_reward": 0.0,
+        "mode": "2v2",
+        "screen_width": 800,
+        "screen_height": 600,
+        "fps": 60,
+        "agent_ids": [
+          "A1",
+          "A2",
+          "B1",
+          "B2"
+        ]
+      },
+      "games": [
+        {
+          "team_A": "range",
+          "team_B": "range",
+          "episodes": 60,
+          "win_A": 0.5333333333333333,
+          "win_B": 0.43333333333333335,
+          "draw": 0.03333333333333333,
+          "mean_points_A": 3.683333333333333,
+          "mean_points_B": 3.4166666666666665,
+          "mean_length": 1259.3166666666666,
+          "mean_contacts": {
+            "A1": 2.0166666666666666,
+            "A2": 1.7333333333333334,
+            "B1": 1.7333333333333334,
+            "B2": 1.6666666666666667
+          }
+        },
+        {
+          "team_A": "reactive",
+          "team_B": "reactive",
+          "episodes": 60,
+          "win_A": 0.36666666666666664,
+          "win_B": 0.35,
+          "draw": 0.2833333333333333,
+          "mean_points_A": 0.5666666666666667,
+          "mean_points_B": 0.5166666666666667,
+          "mean_length": 2000.0,
+          "mean_contacts": {
+            "A1": 4.1,
+            "A2": 4.866666666666666,
+            "B1": 4.983333333333333,
+            "B2": 4.033333333333333
+          }
+        },
+        {
+          "team_A": "predictive",
+          "team_B": "predictive",
+          "episodes": 60,
+          "win_A": 0.0,
+          "win_B": 0.0,
+          "draw": 1.0,
+          "mean_points_A": 0.0,
+          "mean_points_B": 0.0,
+          "mean_length": 2000.0,
+          "mean_contacts": {
+            "A1": 5.733333333333333,
+            "A2": 5.65,
+            "B1": 5.533333333333333,
+            "B2": 5.833333333333333
+          }
+        },
+        {
+          "team_A": "reactive",
+          "team_B": "random",
+          "episodes": 60,
+          "win_A": 1.0,
+          "win_B": 0.0,
+          "draw": 0.0,
+          "mean_points_A": 4.85,
+          "mean_points_B": 0.0,
+          "mean_length": 1408.3,
+          "mean_contacts": {
+            "A1": 3.2333333333333334,
+            "A2": 2.85,
+            "B1": 1.7333333333333334,
+            "B2": 1.7666666666666666
+          }
+        }
+      ]
+    },
+    {
+      "config": {
+        "env_version": "v2",
+        "collision_resolution": "closest_paddle",
+        "dt": 0.016666666666666666,
+        "serve_speed_min": 0.7,
+        "serve_speed_max": 1.0,
+        "ball_speed_max": 1.6,
+        "serve_angle_deg_max": 35.0,
+        "ball_radius": 0.025,
+        "hit_speedup": 1.03,
+        "paddle_smash_factor": 0.35,
+        "paddle_height": 0.34,
+        "paddle_width": 0.03,
+        "paddle_max_speed": 1.6,
+        "paddle_accel": 12.0,
+        "paddle_brake_accel": 24.0,
+        "paddle_overlap": 0.45,
+        "paddle_x_offset": 0.92,
+        "points_to_win": 5,
+        "max_steps": 2000,
+        "reward_mode": "point_only",
+        "hit_reward": 0.05,
+        "team_hit_reward": 0.0,
         "mode": "2v2",
         "screen_width": 800,
         "screen_height": 600,
@@ -364,31 +690,137 @@
           "win_A": 0.5333333333333333,
           "win_B": 0.4166666666666667,
           "draw": 0.05,
-          "mean_points_A": 3.85,
-          "mean_points_B": 3.65,
-          "mean_length": 1257.6666666666667,
+          "mean_points_A": 3.8,
+          "mean_points_B": 3.4833333333333334,
+          "mean_length": 1465.4833333333333,
           "mean_contacts": {
-            "A1": 1.8666666666666667,
-            "A2": 1.5833333333333333,
-            "B1": 1.65,
-            "B2": 1.4333333333333333
+            "A1": 1.9166666666666667,
+            "A2": 1.8166666666666667,
+            "B1": 1.75,
+            "B2": 1.6666666666666667
           }
         },
         {
           "team_A": "reactive",
           "team_B": "reactive",
           "episodes": 60,
-          "win_A": 0.25,
-          "win_B": 0.35,
-          "draw": 0.4,
-          "mean_points_A": 0.4166666666666667,
+          "win_A": 0.0,
+          "win_B": 0.0,
+          "draw": 1.0,
+          "mean_points_A": 0.0,
+          "mean_points_B": 0.0,
+          "mean_length": 2000.0,
+          "mean_contacts": {
+            "A1": 3.183333333333333,
+            "A2": 2.816666666666667,
+            "B1": 2.8,
+            "B2": 3.0833333333333335
+          }
+        },
+        {
+          "team_A": "predictive",
+          "team_B": "predictive",
+          "episodes": 60,
+          "win_A": 0.0,
+          "win_B": 0.0,
+          "draw": 1.0,
+          "mean_points_A": 0.0,
+          "mean_points_B": 0.0,
+          "mean_length": 2000.0,
+          "mean_contacts": {
+            "A1": 4.583333333333333,
+            "A2": 4.716666666666667,
+            "B1": 4.633333333333334,
+            "B2": 4.85
+          }
+        },
+        {
+          "team_A": "reactive",
+          "team_B": "random",
+          "episodes": 60,
+          "win_A": 1.0,
+          "win_B": 0.0,
+          "draw": 0.0,
+          "mean_points_A": 4.783333333333333,
+          "mean_points_B": 0.0,
+          "mean_length": 1446.5833333333333,
+          "mean_contacts": {
+            "A1": 2.55,
+            "A2": 2.8,
+            "B1": 1.2666666666666666,
+            "B2": 1.5166666666666666
+          }
+        }
+      ]
+    },
+    {
+      "config": {
+        "env_version": "v2",
+        "collision_resolution": "closest_paddle",
+        "dt": 0.016666666666666666,
+        "serve_speed_min": 0.8049999999999999,
+        "serve_speed_max": 1.15,
+        "ball_speed_max": 1.8399999999999999,
+        "serve_angle_deg_max": 35.0,
+        "ball_radius": 0.025,
+        "hit_speedup": 1.03,
+        "paddle_smash_factor": 0.35,
+        "paddle_height": 0.34,
+        "paddle_width": 0.03,
+        "paddle_max_speed": 1.6,
+        "paddle_accel": 12.0,
+        "paddle_brake_accel": 24.0,
+        "paddle_overlap": 0.45,
+        "paddle_x_offset": 0.92,
+        "points_to_win": 5,
+        "max_steps": 2000,
+        "reward_mode": "point_only",
+        "hit_reward": 0.05,
+        "team_hit_reward": 0.0,
+        "mode": "2v2",
+        "screen_width": 800,
+        "screen_height": 600,
+        "fps": 60,
+        "agent_ids": [
+          "A1",
+          "A2",
+          "B1",
+          "B2"
+        ]
+      },
+      "games": [
+        {
+          "team_A": "range",
+          "team_B": "range",
+          "episodes": 60,
+          "win_A": 0.5833333333333334,
+          "win_B": 0.4,
+          "draw": 0.016666666666666666,
+          "mean_points_A": 3.8833333333333333,
+          "mean_points_B": 3.3333333333333335,
+          "mean_length": 1245.9833333333333,
+          "mean_contacts": {
+            "A1": 1.9166666666666667,
+            "A2": 1.8,
+            "B1": 1.5833333333333333,
+            "B2": 1.6833333333333333
+          }
+        },
+        {
+          "team_A": "reactive",
+          "team_B": "reactive",
+          "episodes": 60,
+          "win_A": 0.4,
+          "win_B": 0.3,
+          "draw": 0.3,
+          "mean_points_A": 0.6833333333333333,
           "mean_points_B": 0.5666666666666667,
           "mean_length": 2000.0,
           "mean_contacts": {
-            "A1": 4.4,
-            "A2": 4.483333333333333,
-            "B1": 4.433333333333334,
-            "B2": 4.533333333333333
+            "A1": 4.133333333333334,
+            "A2": 4.516666666666667,
+            "B1": 3.8666666666666667,
+            "B2": 4.7
           }
         },
         {
@@ -402,10 +834,10 @@
           "mean_points_B": 0.0,
           "mean_length": 2000.0,
           "mean_contacts": {
-            "A1": 5.4,
-            "A2": 6.05,
-            "B1": 5.383333333333334,
-            "B2": 6.083333333333333
+            "A1": 5.616666666666666,
+            "A2": 5.716666666666667,
+            "B1": 5.583333333333333,
+            "B2": 5.733333333333333
           }
         },
         {
@@ -415,430 +847,14 @@
           "win_A": 1.0,
           "win_B": 0.0,
           "draw": 0.0,
-          "mean_points_A": 4.85,
+          "mean_points_A": 4.866666666666666,
           "mean_points_B": 0.016666666666666666,
-          "mean_length": 1324.8833333333334,
+          "mean_length": 1371.15,
           "mean_contacts": {
-            "A1": 3.1,
-            "A2": 2.5833333333333335,
-            "B1": 1.4833333333333334,
-            "B2": 1.6
-          }
-        }
-      ]
-    },
-    {
-      "config": {
-        "env_version": "v2",
-        "collision_resolution": "closest_paddle",
-        "dt": 0.016666666666666666,
-        "serve_speed_min": 0.7,
-        "serve_speed_max": 1.0,
-        "ball_speed_max": 1.6,
-        "serve_angle_deg_max": 35.0,
-        "ball_radius": 0.025,
-        "hit_speedup": 1.03,
-        "paddle_smash_factor": 0.35,
-        "paddle_height": 0.34,
-        "paddle_width": 0.03,
-        "paddle_max_speed": 1.6,
-        "paddle_accel": 12.0,
-        "paddle_overlap": 0.35,
-        "paddle_x_offset": 0.92,
-        "points_to_win": 5,
-        "max_steps": 2000,
-        "reward_mode": "point_only",
-        "hit_reward": 0.05,
-        "mode": "2v2",
-        "screen_width": 800,
-        "screen_height": 600,
-        "fps": 60,
-        "agent_ids": [
-          "A1",
-          "A2",
-          "B1",
-          "B2"
-        ]
-      },
-      "games": [
-        {
-          "team_A": "range",
-          "team_B": "range",
-          "episodes": 60,
-          "win_A": 0.5666666666666667,
-          "win_B": 0.4,
-          "draw": 0.03333333333333333,
-          "mean_points_A": 3.75,
-          "mean_points_B": 3.4833333333333334,
-          "mean_length": 1487.4666666666667,
-          "mean_contacts": {
-            "A1": 2.0833333333333335,
-            "A2": 1.65,
-            "B1": 1.85,
-            "B2": 1.6
-          }
-        },
-        {
-          "team_A": "reactive",
-          "team_B": "reactive",
-          "episodes": 60,
-          "win_A": 0.06666666666666667,
-          "win_B": 0.11666666666666667,
-          "draw": 0.8166666666666667,
-          "mean_points_A": 0.06666666666666667,
-          "mean_points_B": 0.11666666666666667,
-          "mean_length": 2000.0,
-          "mean_contacts": {
-            "A1": 3.0,
-            "A2": 3.1666666666666665,
-            "B1": 3.1666666666666665,
-            "B2": 3.15
-          }
-        },
-        {
-          "team_A": "predictive",
-          "team_B": "predictive",
-          "episodes": 60,
-          "win_A": 0.0,
-          "win_B": 0.0,
-          "draw": 1.0,
-          "mean_points_A": 0.0,
-          "mean_points_B": 0.0,
-          "mean_length": 2000.0,
-          "mean_contacts": {
-            "A1": 4.516666666666667,
-            "A2": 5.016666666666667,
-            "B1": 4.416666666666667,
-            "B2": 5.116666666666666
-          }
-        },
-        {
-          "team_A": "reactive",
-          "team_B": "random",
-          "episodes": 60,
-          "win_A": 1.0,
-          "win_B": 0.0,
-          "draw": 0.0,
-          "mean_points_A": 4.733333333333333,
-          "mean_points_B": 0.0,
-          "mean_length": 1406.7166666666667,
-          "mean_contacts": {
-            "A1": 2.533333333333333,
-            "A2": 2.7333333333333334,
-            "B1": 1.2333333333333334,
-            "B2": 1.4666666666666666
-          }
-        }
-      ]
-    },
-    {
-      "config": {
-        "env_version": "v2",
-        "collision_resolution": "closest_paddle",
-        "dt": 0.016666666666666666,
-        "serve_speed_min": 0.8049999999999999,
-        "serve_speed_max": 1.15,
-        "ball_speed_max": 1.8399999999999999,
-        "serve_angle_deg_max": 35.0,
-        "ball_radius": 0.025,
-        "hit_speedup": 1.03,
-        "paddle_smash_factor": 0.35,
-        "paddle_height": 0.34,
-        "paddle_width": 0.03,
-        "paddle_max_speed": 1.6,
-        "paddle_accel": 12.0,
-        "paddle_overlap": 0.35,
-        "paddle_x_offset": 0.92,
-        "points_to_win": 5,
-        "max_steps": 2000,
-        "reward_mode": "point_only",
-        "hit_reward": 0.05,
-        "mode": "2v2",
-        "screen_width": 800,
-        "screen_height": 600,
-        "fps": 60,
-        "agent_ids": [
-          "A1",
-          "A2",
-          "B1",
-          "B2"
-        ]
-      },
-      "games": [
-        {
-          "team_A": "range",
-          "team_B": "range",
-          "episodes": 60,
-          "win_A": 0.55,
-          "win_B": 0.43333333333333335,
-          "draw": 0.016666666666666666,
-          "mean_points_A": 3.8333333333333335,
-          "mean_points_B": 3.5166666666666666,
-          "mean_length": 1281.95,
-          "mean_contacts": {
-            "A1": 1.95,
-            "A2": 1.6333333333333333,
-            "B1": 1.8833333333333333,
-            "B2": 1.4333333333333333
-          }
-        },
-        {
-          "team_A": "reactive",
-          "team_B": "reactive",
-          "episodes": 60,
-          "win_A": 0.48333333333333334,
-          "win_B": 0.2833333333333333,
-          "draw": 0.23333333333333334,
-          "mean_points_A": 0.7166666666666667,
-          "mean_points_B": 0.48333333333333334,
-          "mean_length": 2000.0,
-          "mean_contacts": {
-            "A1": 4.316666666666666,
-            "A2": 4.483333333333333,
-            "B1": 4.266666666666667,
-            "B2": 4.483333333333333
-          }
-        },
-        {
-          "team_A": "predictive",
-          "team_B": "predictive",
-          "episodes": 60,
-          "win_A": 0.0,
-          "win_B": 0.0,
-          "draw": 1.0,
-          "mean_points_A": 0.0,
-          "mean_points_B": 0.0,
-          "mean_length": 2000.0,
-          "mean_contacts": {
-            "A1": 5.883333333333334,
-            "A2": 5.583333333333333,
-            "B1": 5.766666666666667,
-            "B2": 5.716666666666667
-          }
-        },
-        {
-          "team_A": "reactive",
-          "team_B": "random",
-          "episodes": 60,
-          "win_A": 1.0,
-          "win_B": 0.0,
-          "draw": 0.0,
-          "mean_points_A": 4.816666666666666,
-          "mean_points_B": 0.0,
-          "mean_length": 1356.0666666666666,
-          "mean_contacts": {
-            "A1": 3.0833333333333335,
-            "A2": 2.7333333333333334,
-            "B1": 1.5,
-            "B2": 1.7333333333333334
-          }
-        }
-      ]
-    },
-    {
-      "config": {
-        "env_version": "v2",
-        "collision_resolution": "closest_paddle",
-        "dt": 0.016666666666666666,
-        "serve_speed_min": 0.7,
-        "serve_speed_max": 1.0,
-        "ball_speed_max": 1.6,
-        "serve_angle_deg_max": 35.0,
-        "ball_radius": 0.025,
-        "hit_speedup": 1.03,
-        "paddle_smash_factor": 0.35,
-        "paddle_height": 0.34,
-        "paddle_width": 0.03,
-        "paddle_max_speed": 1.6,
-        "paddle_accel": 12.0,
-        "paddle_overlap": 0.45,
-        "paddle_x_offset": 0.92,
-        "points_to_win": 5,
-        "max_steps": 2000,
-        "reward_mode": "point_only",
-        "hit_reward": 0.05,
-        "mode": "2v2",
-        "screen_width": 800,
-        "screen_height": 600,
-        "fps": 60,
-        "agent_ids": [
-          "A1",
-          "A2",
-          "B1",
-          "B2"
-        ]
-      },
-      "games": [
-        {
-          "team_A": "range",
-          "team_B": "range",
-          "episodes": 60,
-          "win_A": 0.48333333333333334,
-          "win_B": 0.4666666666666667,
-          "draw": 0.05,
-          "mean_points_A": 3.6,
-          "mean_points_B": 3.55,
-          "mean_length": 1432.0333333333333,
-          "mean_contacts": {
-            "A1": 1.9666666666666666,
-            "A2": 1.65,
-            "B1": 1.6666666666666667,
-            "B2": 1.65
-          }
-        },
-        {
-          "team_A": "reactive",
-          "team_B": "reactive",
-          "episodes": 60,
-          "win_A": 0.1,
-          "win_B": 0.08333333333333333,
-          "draw": 0.8166666666666667,
-          "mean_points_A": 0.1,
-          "mean_points_B": 0.08333333333333333,
-          "mean_length": 2000.0,
-          "mean_contacts": {
-            "A1": 3.2666666666666666,
-            "A2": 3.3833333333333333,
-            "B1": 3.45,
-            "B2": 3.2
-          }
-        },
-        {
-          "team_A": "predictive",
-          "team_B": "predictive",
-          "episodes": 60,
-          "win_A": 0.0,
-          "win_B": 0.0,
-          "draw": 1.0,
-          "mean_points_A": 0.0,
-          "mean_points_B": 0.0,
-          "mean_length": 2000.0,
-          "mean_contacts": {
-            "A1": 4.783333333333333,
-            "A2": 4.716666666666667,
-            "B1": 4.616666666666666,
-            "B2": 4.866666666666666
-          }
-        },
-        {
-          "team_A": "reactive",
-          "team_B": "random",
-          "episodes": 60,
-          "win_A": 1.0,
-          "win_B": 0.0,
-          "draw": 0.0,
-          "mean_points_A": 4.733333333333333,
-          "mean_points_B": 0.0,
-          "mean_length": 1457.1333333333334,
-          "mean_contacts": {
-            "A1": 2.7333333333333334,
-            "A2": 2.75,
-            "B1": 1.3833333333333333,
-            "B2": 1.55
-          }
-        }
-      ]
-    },
-    {
-      "config": {
-        "env_version": "v2",
-        "collision_resolution": "closest_paddle",
-        "dt": 0.016666666666666666,
-        "serve_speed_min": 0.8049999999999999,
-        "serve_speed_max": 1.15,
-        "ball_speed_max": 1.8399999999999999,
-        "serve_angle_deg_max": 35.0,
-        "ball_radius": 0.025,
-        "hit_speedup": 1.03,
-        "paddle_smash_factor": 0.35,
-        "paddle_height": 0.34,
-        "paddle_width": 0.03,
-        "paddle_max_speed": 1.6,
-        "paddle_accel": 12.0,
-        "paddle_overlap": 0.45,
-        "paddle_x_offset": 0.92,
-        "points_to_win": 5,
-        "max_steps": 2000,
-        "reward_mode": "point_only",
-        "hit_reward": 0.05,
-        "mode": "2v2",
-        "screen_width": 800,
-        "screen_height": 600,
-        "fps": 60,
-        "agent_ids": [
-          "A1",
-          "A2",
-          "B1",
-          "B2"
-        ]
-      },
-      "games": [
-        {
-          "team_A": "range",
-          "team_B": "range",
-          "episodes": 60,
-          "win_A": 0.5333333333333333,
-          "win_B": 0.45,
-          "draw": 0.016666666666666666,
-          "mean_points_A": 3.683333333333333,
-          "mean_points_B": 3.45,
-          "mean_length": 1264.8666666666666,
-          "mean_contacts": {
-            "A1": 1.95,
-            "A2": 1.7833333333333334,
-            "B1": 1.7833333333333334,
-            "B2": 1.65
-          }
-        },
-        {
-          "team_A": "reactive",
-          "team_B": "reactive",
-          "episodes": 60,
-          "win_A": 0.31666666666666665,
-          "win_B": 0.43333333333333335,
-          "draw": 0.25,
-          "mean_points_A": 0.55,
-          "mean_points_B": 0.7,
-          "mean_length": 2000.0,
-          "mean_contacts": {
-            "A1": 4.35,
-            "A2": 4.6,
-            "B1": 4.483333333333333,
-            "B2": 4.566666666666666
-          }
-        },
-        {
-          "team_A": "predictive",
-          "team_B": "predictive",
-          "episodes": 60,
-          "win_A": 0.0,
-          "win_B": 0.0,
-          "draw": 1.0,
-          "mean_points_A": 0.0,
-          "mean_points_B": 0.0,
-          "mean_length": 2000.0,
-          "mean_contacts": {
-            "A1": 5.9,
-            "A2": 5.683333333333334,
-            "B1": 5.55,
-            "B2": 6.016666666666667
-          }
-        },
-        {
-          "team_A": "reactive",
-          "team_B": "random",
-          "episodes": 60,
-          "win_A": 1.0,
-          "win_B": 0.0,
-          "draw": 0.0,
-          "mean_points_A": 4.883333333333334,
-          "mean_points_B": 0.016666666666666666,
-          "mean_length": 1332.7833333333333,
-          "mean_contacts": {
-            "A1": 2.8333333333333335,
-            "A2": 2.9,
-            "B1": 1.4666666666666666,
-            "B2": 1.6833333333333333
+            "A1": 2.9833333333333334,
+            "A2": 2.933333333333333,
+            "B1": 1.6333333333333333,
+            "B2": 1.7
           }
         }
       ]

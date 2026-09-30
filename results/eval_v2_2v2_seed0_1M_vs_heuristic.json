@@ -2,43 +2,139 @@
   "mode": "2v2",
   "episodes": 60,
   "win_rate_A": 0.0,
-  "win_rate_B": 0.9666666666666667,
-  "draw_rate": 0.03333333333333333,
-  "mean_return_A": -3.65,
-  "var_return_A": 2.2608333333333333,
-  "mean_ep_len": 1807.7,
+  "win_rate_B": 1.0,
+  "draw_rate": 0.0,
+  "mean_return_A": -3.8333333333333335,
+  "var_return_A": 1.672222222222222,
+  "mean_ep_len": 1763.3666666666666,
   "opponent": "heuristic",
   "opponent_team": "B",
   "specialization": {
     "A": {
       "A1": {
-        "mean_y": 0.14450792968273163,
-        "std_y": 0.3354220986366272,
+        "mean_y": 0.16260026395320892,
+        "std_y": 0.34452685713768005,
         "min_y": -0.12449999898672104,
         "max_y": 0.8299999833106995
       },
       "A2": {
-        "mean_y": -0.7577718496322632,
-        "std_y": 0.1637464314699173,
+        "mean_y": -0.7683219313621521,
+        "std_y": 0.1334054321050644,
         "min_y": -0.8299999833106995,
-        "max_y": 0.12449999898672104
+        "max_y": 0.10078467428684235
       },
-      "coverage_overlap": 0.02376869318286589
+      "coverage_overlap": 0.007551842120186764,
+      "home_separation": 0.930922195315361
     },
     "B": {
       "B1": {
-        "mean_y": 0.28979387879371643,
-        "std_y": 0.2434186041355133,
+        "mean_y": 0.30553916096687317,
+        "std_y": 0.2394160032272339,
         "min_y": -0.12449999898672104,
         "max_y": 0.8299999833106995
       },
       "B2": {
-        "mean_y": -0.25386813282966614,
-        "std_y": 0.23909229040145874,
+        "mean_y": -0.25197893381118774,
+        "std_y": 0.2388024777173996,
         "min_y": -0.8299999833106995,
         "max_y": 0.12449999898672104
       },
-      "coverage_overlap": 0.16092271947778947
+      "coverage_overlap": 0.16252055726734843,
+      "home_separation": 0.5575180947780609
+    }
+  },
+  "behavior": {
+    "A1": {
+      "action_probs": [
+        0.36200638929320805,
+        0.4361354227708361,
+        0.20185818793595584
+      ],
+      "defending_mean_y": 0.2391604011260288,
+      "defending_ball_error": 0.3583957546130875,
+      "defending_samples": 60592,
+      "contacts": 258,
+      "contacts_per_episode": 4.3,
+      "contact_regions": {
+        "upper": 0,
+        "middle": 119,
+        "lower": 139
+      },
+      "contact_region_share": {
+        "upper": 0.0,
+        "middle": 0.46124031007751937,
+        "lower": 0.5387596899224806
+      },
+      "team_contact_share": 0.7435158501440923
+    },
+    "A2": {
+      "action_probs": [
+        0.722576132776318,
+        0.2369236876429557,
+        0.04050017958072626
+      ],
+      "defending_mean_y": -0.8107518822993005,
+      "defending_ball_error": 0.798746696107685,
+      "defending_samples": 60592,
+      "contacts": 89,
+      "contacts_per_episode": 1.4833333333333334,
+      "contact_regions": {
+        "upper": 89,
+        "middle": 0,
+        "lower": 0
+      },
+      "contact_region_share": {
+        "upper": 1.0,
+        "middle": 0.0,
+        "lower": 0.0
+      },
+      "team_contact_share": 0.2564841498559078
+    },
+    "B1": {
+      "action_probs": [
+        0.6027674335078732,
+        0.23923933385002175,
+        0.15799323264210507
+      ],
+      "defending_mean_y": 0.2630720774560833,
+      "defending_ball_error": 0.2102701871425724,
+      "defending_samples": 45210,
+      "contacts": 256,
+      "contacts_per_episode": 4.266666666666667,
+      "contact_regions": {
+        "upper": 0,
+        "middle": 103,
+        "lower": 153
+      },
+      "contact_region_share": {
+        "upper": 0.0,
+        "middle": 0.40234375,
+        "lower": 0.59765625
+      },
+      "team_contact_share": 0.5565217391304348
+    },
+    "B2": {
+      "action_probs": [
+        0.5745543562503544,
+        0.13646244872497684,
+        0.28898319502466874
+      ],
+      "defending_mean_y": -0.14402574918310174,
+      "defending_ball_error": 0.2999470908280777,
+      "defending_samples": 45210,
+      "contacts": 204,
+      "contacts_per_episode": 3.4,
+      "contact_regions": {
+        "upper": 123,
+        "middle": 81,
+        "lower": 0
+      },
+      "contact_region_share": {
+        "upper": 0.6029411764705882,
+        "middle": 0.39705882352941174,
+        "lower": 0.0
+      },
+      "team_contact_share": 0.4434782608695652
     }
   },
   "run": "v2_2v2_seed0_1M"

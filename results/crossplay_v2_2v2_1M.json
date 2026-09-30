@@ -1,43 +1,43 @@
 {
   "mode": "2v2",
   "env_version": "v2",
-  "episodes": 20,
+  "episodes": 60,
   "rows": [
     {
       "team_A_run": "v2_2v2_seed0_1M",
       "team_B_run": "v2_2v2_seed0_1M",
-      "win_rate_A": 0.2,
-      "win_rate_B": 0.7,
+      "win_rate_A": 0.4,
+      "win_rate_B": 0.5,
       "draw_rate": 0.1,
-      "mean_return_A": -2.05,
-      "mean_ep_len": 1481.8
+      "mean_return_A": -0.5166666666666667,
+      "mean_ep_len": 1630.6333333333334
     },
     {
       "team_A_run": "v2_2v2_seed0_1M",
       "team_B_run": "v2_2v2_seed1_1M",
-      "win_rate_A": 0.3,
-      "win_rate_B": 0.6,
-      "draw_rate": 0.1,
-      "mean_return_A": -1.45,
-      "mean_ep_len": 1371.35
+      "win_rate_A": 0.38333333333333336,
+      "win_rate_B": 0.5333333333333333,
+      "draw_rate": 0.08333333333333333,
+      "mean_return_A": -0.9333333333333333,
+      "mean_ep_len": 1392.0
     },
     {
       "team_A_run": "v2_2v2_seed0_1M",
       "team_B_run": "v2_2v2_seed2_1M",
-      "win_rate_A": 0.15,
-      "win_rate_B": 0.75,
-      "draw_rate": 0.1,
-      "mean_return_A": -2.75,
-      "mean_ep_len": 1493.6
+      "win_rate_A": 0.23333333333333334,
+      "win_rate_B": 0.7166666666666667,
+      "draw_rate": 0.05,
+      "mean_return_A": -2.05,
+      "mean_ep_len": 1499.85
     },
     {
       "team_A_run": "v2_2v2_seed1_1M",
       "team_B_run": "v2_2v2_seed0_1M",
-      "win_rate_A": 0.35,
-      "win_rate_B": 0.55,
+      "win_rate_A": 0.5333333333333333,
+      "win_rate_B": 0.36666666666666664,
       "draw_rate": 0.1,
-      "mean_return_A": -0.6,
-      "mean_ep_len": 1708.35
+      "mean_return_A": 0.21666666666666667,
+      "mean_ep_len": 1735.3833333333334
     },
     {
       "team_A_run": "v2_2v2_seed1_1M",
@@ -45,26 +45,26 @@
       "win_rate_A": 0.45,
       "win_rate_B": 0.45,
       "draw_rate": 0.1,
-      "mean_return_A": -0.3,
-      "mean_ep_len": 1561.6
+      "mean_return_A": -0.16666666666666666,
+      "mean_ep_len": 1501.9
     },
     {
       "team_A_run": "v2_2v2_seed1_1M",
       "team_B_run": "v2_2v2_seed2_1M",
-      "win_rate_A": 0.55,
-      "win_rate_B": 0.4,
-      "draw_rate": 0.05,
-      "mean_return_A": 0.35,
-      "mean_ep_len": 1759.35
+      "win_rate_A": 0.38333333333333336,
+      "win_rate_B": 0.48333333333333334,
+      "draw_rate": 0.13333333333333333,
+      "mean_return_A": -0.15,
+      "mean_ep_len": 1811.35
     },
     {
       "team_A_run": "v2_2v2_seed2_1M",
       "team_B_run": "v2_2v2_seed0_1M",
-      "win_rate_A": 0.5,
-      "win_rate_B": 0.3,
-      "draw_rate": 0.2,
-      "mean_return_A": 0.7,
-      "mean_ep_len": 1818.1
+      "win_rate_A": 0.6333333333333333,
+      "win_rate_B": 0.26666666666666666,
+      "draw_rate": 0.1,
+      "mean_return_A": 1.1666666666666667,
+      "mean_ep_len": 1717.8833333333334
     },
     {
       "team_A_run": "v2_2v2_seed2_1M",
@@ -72,17 +72,17 @@
       "win_rate_A": 0.65,
       "win_rate_B": 0.25,
       "draw_rate": 0.1,
-      "mean_return_A": 0.95,
-      "mean_ep_len": 1797.7
+      "mean_return_A": 1.35,
+      "mean_ep_len": 1767.7666666666667
     },
     {
       "team_A_run": "v2_2v2_seed2_1M",
       "team_B_run": "v2_2v2_seed2_1M",
-      "win_rate_A": 0.7,
-      "win_rate_B": 0.15,
-      "draw_rate": 0.15,
-      "mean_return_A": 1.4,
-      "mean_ep_len": 1837.15
+      "win_rate_A": 0.5166666666666667,
+      "win_rate_B": 0.2833333333333333,
+      "draw_rate": 0.2,
+      "mean_return_A": 0.55,
+      "mean_ep_len": 1851.0333333333333
     }
   ]
 }

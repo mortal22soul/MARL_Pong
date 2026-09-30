@@ -89,6 +89,24 @@ class ActorCritic(nn.Module):
             return new_state
         return state_dict
 
+    @staticmethod
+    def is_legacy_state_dict(state_dict: dict) -> bool:
+        """Whether weights predate separate torsos and canonical features."""
+        return "torso.0.weight" in state_dict
+
+    def load_checkpoint(self, state_dict: dict) -> bool:
+        """Load current or legacy weights without changing their input semantics.
+
+        Legacy checkpoints used one raw-observation torso. Their copied weights
+        remain valid only with raw observations, so feature canonicalization is
+        disabled for that network after conversion.
+        """
+        legacy = self.is_legacy_state_dict(state_dict)
+        self.load_state_dict(self._load_state_dict_compat(state_dict))
+        if legacy:
+            self.agent_id = None
+        return legacy
+
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         return self.logits(self.actor_torso(x)), self.value_head(self.critic_torso(x)).squeeze(-1)
 

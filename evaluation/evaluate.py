@@ -19,8 +19,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 
+from agents.frozen_policy import FrozenPolicy
 from agents.multi_agent_ppo import IndependentPPO, PPOConfig
-from agents.policies import ActorCritic
 from baselines.agents import HeuristicAgent, PredictiveAgent, RandomAgent, RangeAwareAgent
 from environment.config import V2_CALIBRATED, Config
 from environment.pong_env import PongEnv
@@ -41,6 +41,7 @@ def evaluate_weights(
     save_npz: str | None = None,
     opponent: str = "self",
     opponent_team: str = "B",
+    opponent_state: dict | None = None,
 ) -> dict:
     """Evaluate full or partial checkpoints against a scripted team.
 
@@ -51,7 +52,14 @@ def evaluate_weights(
         raise ValueError("opponent_team must be 'A' or 'B'")
     env = PongEnv(config=cfg, seed=base_seed)
     subs = {}
-    if opponent != "self":
+    if opponent == "checkpoint":
+        if opponent_state is None:
+            raise ValueError("checkpoint opponent evaluation requires opponent_state")
+        for b in [a for a in env.agent_ids if a.startswith(opponent_team)]:
+            if b not in opponent_state:
+                raise ValueError(f"checkpoint does not contain opponent agent {b}")
+            subs[b] = FrozenPolicy(opponent_state[b], agent_id=b)
+    elif opponent != "self":
         for i, b in enumerate([a for a in env.agent_ids if a.startswith(opponent_team)]):
             lo, hi = env._allowed_range(b)
             subs[b] = (
@@ -86,8 +94,7 @@ def evaluate_weights(
         env.agent_ids, cfg=PPOConfig(), trainable_ids=learned_ids, opponents=subs
     )
     for a in trainer.ids:
-        sd = ActorCritic._load_state_dict_compat(state[a])
-        trainer.nets[a].load_state_dict(sd)
+        trainer.nets[a].load_checkpoint(state[a])
         trainer.nets[a].eval()
     wins = {"A": 0, "B": 0, "draw": 0}
     returns, lens = [], []
@@ -207,8 +214,13 @@ def main() -> None:
     ap.add_argument("--out-npz", default=None)
     ap.add_argument(
         "--opponent",
-        choices=["self", "random", "range", "heuristic", "reactive", "predictive"],
+        choices=["self", "random", "range", "heuristic", "reactive", "predictive", "checkpoint"],
         default="self",
+    )
+    ap.add_argument(
+        "--opponent-weights",
+        default=None,
+        help="full-team checkpoint used with --opponent checkpoint",
     )
     ap.add_argument("--opponent-team", choices=["A", "B"], default="B")
     args = ap.parse_args()
@@ -233,8 +245,22 @@ def main() -> None:
         hit_reward=args.hit_reward,
     )
     state = torch.load(args.weights, map_location="cpu", weights_only=True)
+    if args.opponent == "checkpoint" and not args.opponent_weights:
+        ap.error("--opponent checkpoint requires --opponent-weights")
+    opponent_state = (
+        torch.load(args.opponent_weights, map_location="cpu", weights_only=True)
+        if args.opponent == "checkpoint"
+        else None
+    )
     out = evaluate_weights(
-        cfg, state, args.episodes, args.seed, args.out_npz, args.opponent, args.opponent_team
+        cfg,
+        state,
+        args.episodes,
+        args.seed,
+        args.out_npz,
+        args.opponent,
+        args.opponent_team,
+        opponent_state,
     )
     print(json.dumps(out, indent=2))
     if args.out_json:

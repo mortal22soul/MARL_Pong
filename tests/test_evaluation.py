@@ -94,6 +94,22 @@ def test_evaluate_partial_team_checkpoint_against_side_swapped_baseline():
     assert out["episodes"] == 2
 
 
+def test_evaluate_partial_team_checkpoint_against_frozen_checkpoint():
+    cfg = dataclasses.replace(Config(), mode="2v2", max_steps=150, points_to_win=1)
+    full = _tiny_state()
+    learned_a = {a: full[a] for a in ("A1", "A2")}
+    out = evaluate_weights(
+        cfg,
+        learned_a,
+        episodes=2,
+        opponent="checkpoint",
+        opponent_team="B",
+        opponent_state=full,
+    )
+    assert out["opponent"] == "checkpoint"
+    assert out["episodes"] == 2
+
+
 def test_evaluate_weights_deterministic_for_fixed_seed():
     cfg = dataclasses.replace(Config(), mode="2v2", max_steps=150, points_to_win=1)
     state = _tiny_state()

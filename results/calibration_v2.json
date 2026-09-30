@@ -1,5 +1,15 @@
 {
   "purpose": "scripted-only v2 calibration",
+  "provenance": {
+    "generated_at_utc": "unknown (generated before provenance support)",
+    "git_revision": "unknown (generated before provenance support)",
+    "command": {
+      "overlaps": "0.15,0.25,0.35,0.45",
+      "speed_scales": "1.0,1.15",
+      "episodes": 60,
+      "seed": 1000
+    }
+  },
   "candidates": [
     {
       "config": {

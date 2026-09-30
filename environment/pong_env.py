@@ -66,6 +66,7 @@ class PongEnv:
             self.paddles[a] = [y0, 0.0]
         self.scores = {"A": 0, "B": 0}
         self.hits = {a: 0 for a in self.agent_ids}
+        self.contact_regions = {a: {"upper": 0, "middle": 0, "lower": 0} for a in self.agent_ids}
         self.steps = 0
         self._serve()
         return {a: self._obs(a) for a in self.agent_ids}, {}
@@ -82,6 +83,15 @@ class PongEnv:
 
     def _side(self, agent: str) -> str:
         return "left" if agent.startswith("A") else "right"
+
+    @staticmethod
+    def _contact_region(y: float) -> str:
+        """Classify a return by the ball's vertical impact band."""
+        if y < -1.0 / 3.0:
+            return "upper"
+        if y > 1.0 / 3.0:
+            return "lower"
+        return "middle"
 
     def _mate(self, agent: str) -> str:
         if len(self.agent_ids) <= 2:
@@ -123,6 +133,7 @@ class PongEnv:
                     )
                     if hit:
                         self.hits[a] += 1
+                        self.contact_regions[a][self._contact_region(py)] += 1
                         hit_agent = a
         else:
             # v2 behavior: pick from simultaneous candidates before velocity
@@ -142,6 +153,7 @@ class PongEnv:
                 )
                 if hit:
                     self.hits[chosen] += 1
+                    self.contact_regions[chosen][self._contact_region(py)] += 1
                     hit_agent = chosen
         self.ball = [px, py, vx, vy]
         self.steps += 1
@@ -172,7 +184,12 @@ class PongEnv:
                 self._serve()
         truncated = {a: self.steps >= cfg.max_steps for a in self.agent_ids}
         obs = {a: self._obs(a) for a in self.agent_ids}
-        info = {"scores": dict(self.scores), "hits": dict(self.hits), "steps": self.steps}
+        info = {
+            "scores": dict(self.scores),
+            "hits": dict(self.hits),
+            "contact_regions": {a: dict(regions) for a, regions in self.contact_regions.items()},
+            "steps": self.steps,
+        }
         return obs, rewards, terminated, truncated, info
 
     def _obs(self, agent: str) -> np.ndarray:

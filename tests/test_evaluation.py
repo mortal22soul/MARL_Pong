@@ -63,6 +63,9 @@ def test_evaluate_weights_metrics_and_npz(tmp_path):
         assert abs(sum(behavior["action_probs"]) - 1.0) < 1e-9
         assert behavior["contacts"] >= 0
         assert 0.0 <= behavior["team_contact_share"] <= 1.0
+        assert sum(behavior["contact_regions"].values()) == behavior["contacts"]
+        expected_region_share = 1.0 if behavior["contacts"] else 0.0
+        assert abs(sum(behavior["contact_region_share"].values()) - expected_region_share) < 1e-9
     # Trajectory dump round-trips with one array per agent per episode.
     npz = np.load(npz_path)
     assert set(npz.files) == {f"{a}_{i}" for a in cfg.agent_ids for i in range(2)}

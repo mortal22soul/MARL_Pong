@@ -188,6 +188,11 @@ def test_v2_calibrated_profile_is_frozen():
     assert V2_CALIBRATED.paddle_overlap == 0.15
     assert V2_CALIBRATED.serve_speed_min == 0.805
     assert V2_CALIBRATED.serve_speed_max == 1.15
+    assert V2_CALIBRATED.reward_mode == "point_only"
+
+
+def test_primary_reward_default_is_point_only():
+    assert Config().reward_mode == "point_only"
 
 
 def test_shared_hit_reward_is_team_identical_diagnostic_mode():
@@ -199,3 +204,12 @@ def test_shared_hit_reward_is_team_identical_diagnostic_mode():
     _, rewards, _, _, _ = env.step({a: 0 for a in env.agent_ids})
     assert rewards["A1"] == rewards["A2"] == 0.05
     assert rewards["B1"] == rewards["B2"] == 0.0
+
+
+def test_contact_regions_record_impact_band():
+    env = PongEnv(seed=0)
+    env.reset(seed=0)
+    env.paddles["A2"] = [-0.6, 0.0]
+    env.ball = [-0.90, -0.6, -1.0, 0.0]
+    _, _, _, _, info = env.step({a: 0 for a in env.agent_ids})
+    assert info["contact_regions"]["A2"] == {"upper": 1, "middle": 0, "lower": 0}

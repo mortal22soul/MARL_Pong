@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import datetime
 import json
 import os
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -24,6 +26,13 @@ from environment.pong_env import PongEnv
 
 def parse_csv_floats(value: str) -> list[float]:
     return [float(v) for v in value.split(",")]
+
+
+def git_revision() -> str:
+    try:
+        return subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    except OSError, subprocess.CalledProcessError:
+        return "unknown"
 
 
 def make_agent(kind: str, agent_id: str, env: PongEnv, seed: int):
@@ -112,7 +121,24 @@ def main() -> None:
                 flush=True,
             )
     with open(args.out, "w") as f:
-        json.dump({"purpose": "scripted-only v2 calibration", "candidates": rows}, f, indent=2)
+        json.dump(
+            {
+                "purpose": "scripted-only v2 calibration",
+                "provenance": {
+                    "generated_at_utc": datetime.datetime.now(datetime.UTC).isoformat(),
+                    "git_revision": git_revision(),
+                    "command": {
+                        "overlaps": args.overlaps,
+                        "speed_scales": args.speed_scales,
+                        "episodes": args.episodes,
+                        "seed": args.seed,
+                    },
+                },
+                "candidates": rows,
+            },
+            f,
+            indent=2,
+        )
     print(f"wrote {args.out}; choose and freeze one candidate before PPO training")
 
 

@@ -96,6 +96,7 @@ def evaluate_weights(
     defending_error: dict[str, list[float]] = {a: [] for a in env.agent_ids}
     action_counts = {a: np.zeros(3, dtype=np.int64) for a in env.agent_ids}
     contacts = {a: 0 for a in env.agent_ids}
+    region_contacts = {a: {"upper": 0, "middle": 0, "lower": 0} for a in env.agent_ids}
     for ep in range(episodes):
         obs, _ = env.reset(seed=base_seed + ep)
         ys: dict[str, list[float]] = {a: [] for a in env.agent_ids}
@@ -121,6 +122,8 @@ def evaluate_weights(
         lens.append(info["steps"])
         for a in env.agent_ids:
             contacts[a] += info["hits"][a]
+            for region, count in info["contact_regions"][a].items():
+                region_contacts[a][region] += count
         wins["A" if sa > sb else ("B" if sb > sa else "draw")] += 1
     spec: dict[str, dict] = {}
     for team in ("A", "B"):
@@ -154,6 +157,11 @@ def evaluate_weights(
             "defending_samples": len(defending_y[a]),
             "contacts": contacts[a],
             "contacts_per_episode": contacts[a] / episodes,
+            "contact_regions": dict(region_contacts[a]),
+            "contact_region_share": {
+                region: region_contacts[a][region] / contacts[a] if contacts[a] else 0.0
+                for region in ("upper", "middle", "lower")
+            },
         }
     for team in ("A", "B"):
         mates = [a for a in env.agent_ids if a.startswith(team)]

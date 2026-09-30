@@ -44,11 +44,11 @@ class Config:
     # --- episode ---
     points_to_win: int = 5
     max_steps: int = 2000  # prevents infinite rallies stalling training
-    # reward_mode: "point_only" (macro points only), "shared_hit" (team hit reward),
-    # or "shaped" (hit_reward to hitter, team_hit_reward to teammate).
-    reward_mode: str = "shaped"
-    hit_reward: float = 0.2
-    team_hit_reward: float = 0.1
+    # Primary protocol: macro point-only shared reward. shared_hit and shaped
+    # are diagnostic ablations and must be selected explicitly on the CLI.
+    reward_mode: str = "point_only"
+    hit_reward: float = 0.05
+    team_hit_reward: float = 0.0
     # "2v2" (A1,A2 vs B1,B2, overlapping partial ranges) or
     # "1v1" (A1 vs B1, each covering the full field height).
     mode: str = "2v2"
@@ -96,4 +96,5 @@ V2_CALIBRATED = Config(
     serve_speed_min=0.805,
     serve_speed_max=1.15,
     ball_speed_max=1.84,
+    reward_mode="point_only",
 )

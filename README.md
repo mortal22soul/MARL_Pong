@@ -47,14 +47,15 @@ Each agent has its own actor-critic MLP (64×64, CPU) and PPO updates — no
 shared critic, no parameter sharing. One shared env step per timestep.
 
 ```bash
-# 2v2 main condition (run per seed 0,1,2 for the 3-seed protocol)
-uv run python experiments/exp_2v2_main.py --timesteps 1000000 --seed 0 \
-  --run-name 2v2_seed0_1M
+# v2 primary condition (run fresh seeds 0, 1, 2)
+uv run python experiments/exp_2v2_main.py --env-version v2 \
+  --reward-mode point_only --timesteps 1000000 --seed 0 \
+  --run-name v2_2v2_seed0_1M
 # 1v1 sanity baseline
 uv run python experiments/exp_1v1_baseline.py --timesteps 300000 --seed 0
-# continue a run (warm start)
+# warm-start model weights only; optimizer state is intentionally fresh
 uv run python experiments/exp_2v2_main.py --timesteps 700000 --seed 1 \
-  --init-weights results/models/2v2_seed0/final.pt --run-name 2v2_seed0_cont1M
+  --warm-start-weights results/models/2v2_seed0/final.pt --run-name 2v2_seed0_cont1M
 ```
 
 Training logs per-iteration stats to `results/logs/<run>.csv`, checkpoints to
@@ -193,6 +194,7 @@ gap should you run the fresh three-seed v2 main condition:
 uv run python experiments/exp_2v2_main.py \
   --env-version v2 --paddle-overlap 0.15 \
   --ball-speed-scale 1.15 \
+  --reward-mode point_only \
   --gamma 0.995 --lam 0.99 --ent 0.01 --ent-final 0.001 \
   --timesteps 1000000 --seed 0 --run-name v2_2v2_seed0_1M
 ```
@@ -244,6 +246,7 @@ separating skill improvement from simultaneous-opponent drift:
 uv run python experiments/exp_2v2_main.py \
   --env-version v2 --train-team A --opponent checkpoint \
   --opponent-weights results/models/v2_2v2_seed2_1M/final.pt \
+  --reward-mode point_only \
   --gamma 0.995 --lam 0.99 --ent 0.01 --ent-final 0.001 \
   --timesteps 1000000 --seed 0 --run-name v2_frozen_B_seed0
 ```

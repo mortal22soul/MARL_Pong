@@ -113,12 +113,14 @@ Findings:
   more of the field as chasing becomes vigorous — shared coverage grows even
   as distinct home bands persist. "Complementary roles" here means distinct
   anchors with overlapping pursuit, not a clean static partition.
-- **Verdict on the research question:** partial yes. Distinct, stable,
-  complementary positional roles emerge without communication or role
-  assignment (the heatmaps are unambiguous), and the best-partitioned seed
-  is also the most successful. But coordination is seed-lottery: it is not
-  guaranteed, not monotone over training, and win rate alone would have
-  overstated it (beating random is achievable with zero coordination).
+- **Verdict on the research question:** positional differentiation is
+  reproducible in some runs, but the current evidence does not establish that
+  it is effective coordination in every run. Heatmaps show distinct occupancy
+  bands, not causal coordination by themselves. Functional evidence requires
+  defense-time ball error, contact share, and contact-region allocation; these
+  metrics are now collected for v2 follow-up runs. Specialization is
+  seed-dependent, non-monotone over training, and insufficient on its own to
+  explain team success.
 
 ## 5. Discussion
 
@@ -137,8 +139,9 @@ remains a much stronger fixed policy. Team-A coverage overlap is `0.13 ±
 0.09`; this is evidence of positional differentiation only, not sufficient
 evidence of coordination by itself. The v2 evaluator therefore records each
 paddle's defense-time position and ball error, action distribution, contact
-count/share, and home-position separation. Future coordination claims should
-use these functional measures alongside heatmaps.
+count/share, contact allocation by upper/middle/lower impact band, and
+home-position separation. Future coordination claims should use these
+functional measures alongside heatmaps.
 
 An earlier draft incorrectly pooled paired side-swapped baseline evaluations
 with the three standard seeds, creating a six-row aggregate and an apparent

@@ -51,10 +51,10 @@ def parse_args(argv=None):
     )
     ap.add_argument("--points", type=int, default=5)
     ap.add_argument(
-        "--reward-mode", choices=["point_only", "shared_hit", "shaped"], default="shaped"
+        "--reward-mode", choices=["point_only", "shared_hit", "shaped"], default="point_only"
     )
-    ap.add_argument("--hit-reward", type=float, default=0.2)
-    ap.add_argument("--team-hit-reward", type=float, default=0.1)
+    ap.add_argument("--hit-reward", type=float, default=0.05)
+    ap.add_argument("--team-hit-reward", type=float, default=0.0)
     ap.add_argument("--ckpt-every", type=int, default=20, help="iterations between checkpoints")
     ap.add_argument("--eval-episodes", type=int, default=20)
     ap.add_argument("--run-name", default=None)

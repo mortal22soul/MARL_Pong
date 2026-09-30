@@ -57,6 +57,12 @@ def test_evaluate_weights_metrics_and_npz(tmp_path):
             <= spec["A1" if team == "A" else "B1"]["max_y"]
         )
         assert 0.0 <= spec["coverage_overlap"] <= 1.0
+        assert spec["home_separation"] >= 0.0
+    for a in cfg.agent_ids:
+        behavior = out["behavior"][a]
+        assert abs(sum(behavior["action_probs"]) - 1.0) < 1e-9
+        assert behavior["contacts"] >= 0
+        assert 0.0 <= behavior["team_contact_share"] <= 1.0
     # Trajectory dump round-trips with one array per agent per episode.
     npz = np.load(npz_path)
     assert set(npz.files) == {f"{a}_{i}" for a in cfg.agent_ids for i in range(2)}
@@ -71,6 +77,18 @@ def test_evaluate_weights_substituted_random_opponent():
     # beyond per-paddle stats is still fine, but the run itself must complete.
     assert out["episodes"] == 2
     assert out["win_rate_A"] + out["win_rate_B"] + out["draw_rate"] == 1.0
+
+
+def test_evaluate_partial_team_checkpoint_against_side_swapped_baseline():
+    cfg = dataclasses.replace(Config(), mode="2v2", max_steps=150, points_to_win=1)
+    env = PongEnv(config=cfg, seed=0)
+    learner = IndependentPPO(
+        env.agent_ids, trainable_ids=["B1", "B2"], opponents={"A1": None, "A2": None}
+    )
+    state = {a: learner.nets[a].state_dict() for a in learner.ids}
+    out = evaluate_weights(cfg, state, episodes=2, opponent="random", opponent_team="A")
+    assert out["opponent_team"] == "A"
+    assert out["episodes"] == 2
 
 
 def test_evaluate_weights_deterministic_for_fixed_seed():

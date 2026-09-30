@@ -122,6 +122,31 @@ Findings:
 
 ## 5. Discussion
 
+### v2 follow-up: calibrated collision fairness and corrected aggregation
+
+After the original v1 report, a versioned v2 condition was run with the
+predeclared scripted-only calibration profile: `paddle_overlap=0.15`, ball
+speed scale 1.15, and symmetric closest-paddle collision selection. Three
+fresh 1M-step 2v2 seeds were evaluated with 60 deterministic episodes each.
+The standard Team-A-versus-Team-B baseline results are: random `0.86 ± 0.07`
+Team-A win rate, reactive tracker `0.04 ± 0.08`, and self-play `0.44 ± 0.16`
+for Team A versus `0.44 ± 0.15` for Team B (all `mean ± sample std`).
+
+The v2 random result is stronger than v1's `0.68 ± 0.24`, while the tracker
+remains a much stronger fixed policy. Team-A coverage overlap is `0.13 ±
+0.09`; this is evidence of positional differentiation only, not sufficient
+evidence of coordination by itself. The v2 evaluator therefore records each
+paddle's defense-time position and ball error, action distribution, contact
+count/share, and home-position separation. Future coordination claims should
+use these functional measures alongside heatmaps.
+
+An earlier draft incorrectly pooled paired side-swapped baseline evaluations
+with the three standard seeds, creating a six-row aggregate and an apparent
+50% tracker win rate. Those paired games are diagnostic side tests, not extra
+independent seeds. The corrected aggregator excludes them from headline
+tables. Cross-play and frozen-opponent experiments are now implemented as the
+next tests of seed-specific co-adaptation and non-stationarity.
+
 - **Non-stationarity dominates the dynamics.** The oscillating curves and
   the coin-flip team asymmetry at 1M are exactly the challenge Li et al.
   attribute to simultaneous learning: no agent's optimization target is

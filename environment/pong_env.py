@@ -26,6 +26,15 @@ class PongEnv:
     def __init__(self, config: Config = DEFAULT, render_mode=None, seed: int | None = None):
         if config.mode not in ("1v1", "2v2"):
             raise ValueError(f"unknown mode {config.mode!r}; expected '1v1' or '2v2'")
+        if config.collision_resolution not in ("sequential_id", "closest_paddle"):
+            raise ValueError(
+                "unknown collision resolution "
+                f"{config.collision_resolution!r}; expected 'sequential_id' or 'closest_paddle'"
+            )
+        if config.reward_mode not in ("point_only", "shared_hit", "shaped"):
+            raise ValueError(
+                f"unknown reward mode {config.reward_mode!r}; expected 'point_only', 'shared_hit', or 'shaped'"
+            )
         self.cfg = config
         self.render_mode = render_mode
         self._rng = random.Random(seed)
@@ -56,6 +65,7 @@ class PongEnv:
                 y0 = lo + 0.75 * (hi - lo) if self._slot(a) == 0 else lo + 0.25 * (hi - lo)
             self.paddles[a] = [y0, 0.0]
         self.scores = {"A": 0, "B": 0}
+        self.hits = {a: 0 for a in self.agent_ids}
         self.steps = 0
         self._serve()
         return {a: self._obs(a) for a in self.agent_ids}, {}
@@ -101,18 +111,55 @@ class PongEnv:
             self.paddles[a] = [y, vy]
         px, py, vx, vy = self.ball
         px, py, vx, vy = physics.step_ball(px, py, vx, vy, cfg)
-        # Paddle collisions: check both paddles on the approached side.
-        for a in self.agent_ids:
-            side = self._side(a)
-            if (side == "left" and vx < 0) or (side == "right" and vx > 0):
-                px, vx, vy, _ = physics.paddle_collision(
-                    px, py, vx, vy, self.paddles[a][0], side, cfg, self.paddles[a][1]
+        hit_agent = None
+        if cfg.collision_resolution == "sequential_id":
+            # v1 behavior: fixed dictionary/agent-ID ordering determines a
+            # shared-region collision. Retained for reproducibility only.
+            for a in self.agent_ids:
+                side = self._side(a)
+                if (side == "left" and vx < 0) or (side == "right" and vx > 0):
+                    px, vx, vy, hit = physics.paddle_collision(
+                        px, py, vx, vy, self.paddles[a][0], side, cfg, self.paddles[a][1]
+                    )
+                    if hit:
+                        self.hits[a] += 1
+                        hit_agent = a
+        else:
+            # v2 behavior: pick from simultaneous candidates before velocity
+            # changes. Closest vertical center wins; agent ID breaks an exact,
+            # measure-zero tie consistently on both teams.
+            side = "left" if vx < 0 else "right"
+            candidates = [
+                a
+                for a in self.agent_ids
+                if self._side(a) == side
+                and physics.paddle_overlaps_ball(px, py, vx, self.paddles[a][0], side, cfg)
+            ]
+            if candidates:
+                chosen = min(candidates, key=lambda a: (abs(py - self.paddles[a][0]), a))
+                px, vx, vy, hit = physics.paddle_collision(
+                    px, py, vx, vy, self.paddles[chosen][0], side, cfg, self.paddles[chosen][1]
                 )
+                if hit:
+                    self.hits[chosen] += 1
+                    hit_agent = chosen
         self.ball = [px, py, vx, vy]
         self.steps += 1
 
         scorer = physics.check_score(px)
         rewards = {a: 0.0 for a in self.agent_ids}
+        if hit_agent is not None:
+            hit_team = hit_agent[0]
+            if cfg.reward_mode == "shared_hit":
+                for a in self.agent_ids:
+                    if a.startswith(hit_team):
+                        rewards[a] = cfg.hit_reward
+            elif cfg.reward_mode == "shaped":
+                for a in self.agent_ids:
+                    if a == hit_agent:
+                        rewards[a] = cfg.hit_reward
+                    elif a.startswith(hit_team):
+                        rewards[a] = getattr(cfg, "team_hit_reward", 0.1)
         terminated = {a: False for a in self.agent_ids}
         if scorer is not None:
             self.scores[scorer] += 1
@@ -125,7 +172,7 @@ class PongEnv:
                 self._serve()
         truncated = {a: self.steps >= cfg.max_steps for a in self.agent_ids}
         obs = {a: self._obs(a) for a in self.agent_ids}
-        info = {"scores": dict(self.scores), "steps": self.steps}
+        info = {"scores": dict(self.scores), "hits": dict(self.hits), "steps": self.steps}
         return obs, rewards, terminated, truncated, info
 
     def _obs(self, agent: str) -> np.ndarray:

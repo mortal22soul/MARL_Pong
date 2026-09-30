@@ -3,6 +3,7 @@
 import argparse
 import os
 
+from agents.policies import ActorCritic
 from baselines.agents import HeuristicAgent, RandomAgent
 from environment.config import Config
 from environment.pong_env import PongEnv
@@ -12,6 +13,9 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--headless", action="store_true")
     ap.add_argument("--human", action="store_true", help="control A1 with W/S keys")
+    ap.add_argument(
+        "--human-both", action="store_true", help="control both A1 (W/S) and A2 (Up/Down)"
+    )
     ap.add_argument("--episodes", type=int, default=3)
     ap.add_argument("--points", type=int, default=5)
     ap.add_argument(
@@ -34,8 +38,12 @@ def main() -> None:
     )
     ap.add_argument("--fps", type=int, default=None, help="override render/capture fps")
     args = ap.parse_args()
+    if args.human and args.human_both:
+        ap.error("use only one of --human or --human-both")
     if args.human and args.headless:
         ap.error("--human needs a display; drop --headless to play.")
+    if args.human_both and args.headless:
+        ap.error("--human-both needs a display; drop --headless to play.")
     if args.record:
         # Dummy video driver lets pygame build a real surface with no window.
         os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
@@ -72,7 +80,8 @@ def main() -> None:
             )
         trained = IndependentPPO(env.agent_ids)
         for a in env.agent_ids:
-            trained.nets[a].load_state_dict(state[a])
+            sd = ActorCritic._load_state_dict_compat(state[a])
+            trained.nets[a].load_state_dict(sd)
             trained.nets[a].eval()
 
     headed = not args.headless
@@ -83,20 +92,29 @@ def main() -> None:
         import imageio
 
         writer = imageio.get_writer(args.record, fps=cfg.fps)
-    if args.human and headed:
+    if (args.human or args.human_both) and headed:
         if args.mode == "1v1":
             print("You play A1 (left side, full height). W=up, S=down, ESC=quit.")
         else:
             lo, hi = cfg.paddle_range(0)
-            print(
-                f"You play A1 (left side, upper region y in [{lo:.2f}, {hi:.2f}]). "
-                "W=up, S=down, ESC=quit."
-            )
+            if args.human_both:
+                print(
+                    f"You play A1 (W/S) and A2 (Up/Down) on left side. "
+                    f"Regions: A1 y in [{lo:.2f}, {hi:.2f}], A2 y in "
+                    f"[{cfg.paddle_range(1)[0]:.2f}, {cfg.paddle_range(1)[1]:.2f}]. "
+                    "ESC=quit."
+                )
+            else:
+                print(
+                    f"You play A1 (left side, upper region y in [{lo:.2f}, {hi:.2f}]). "
+                    "W=up, S=down, ESC=quit."
+                )
     for ep in range(args.episodes):
         obs, _ = env.reset(seed=ep)
         done = False
         while not done:
-            human_act = 0
+            human_act_a1 = 0
+            human_act_a2 = 0
             if headed:
                 import pygame
 
@@ -107,16 +125,23 @@ def main() -> None:
                     if e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
                         env.close()
                         return
-                if args.human:
+                if args.human or args.human_both:
                     keys = pygame.key.get_pressed()
                     if keys[pygame.K_w] and not keys[pygame.K_s]:
-                        human_act = 1
+                        human_act_a1 = 1
                     elif keys[pygame.K_s] and not keys[pygame.K_w]:
-                        human_act = 2
+                        human_act_a1 = 2
+                    if args.human_both:
+                        if keys[pygame.K_UP] and not keys[pygame.K_DOWN]:
+                            human_act_a2 = 1
+                        elif keys[pygame.K_DOWN] and not keys[pygame.K_UP]:
+                            human_act_a2 = 2
             actions = {}
             for a, o in obs.items():
                 if args.human and a == "A1" and headed:
-                    actions[a] = human_act
+                    actions[a] = human_act_a1
+                elif args.human_both and a in ("A1", "A2") and headed:
+                    actions[a] = human_act_a1 if a == "A1" else human_act_a2
                 elif trained is not None:
                     actions[a] = trained.nets[a].greedy(o)
                 else:

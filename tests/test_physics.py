@@ -83,3 +83,8 @@ def test_smash_transfers_paddle_motion():
     )
     assert hit1 and hit2
     assert vy_moving > vy_still  # moving paddle imparts extra vy
+
+
+def test_paddle_overlap_predicate_requires_incoming_ball():
+    assert physics.paddle_overlaps_ball(-CFG.paddle_x_offset, 0.0, -1.0, 0.0, "left", CFG)
+    assert not physics.paddle_overlaps_ball(-CFG.paddle_x_offset, 0.0, 1.0, 0.0, "left", CFG)

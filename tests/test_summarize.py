@@ -22,6 +22,8 @@ def _write_eval(results_dir, run, opponent, **overrides):
     }
     data.update(overrides)
     suffix = "" if opponent == "self" else f"_vs_{opponent}"
+    if data.get("opponent_team") == "A":
+        suffix += "_teamA"
     path = os.path.join(str(results_dir), f"eval_{run}{suffix}.json")
     with open(path, "w") as f:
         json.dump(data, f)
@@ -48,10 +50,17 @@ def test_group_aggregate_and_format(tmp_path):
     agg = aggregate(groups)
     self_agg = agg[("2v2_1M", "self")]
     assert self_agg["n_seeds"] == 2
-    mean, lo, hi = self_agg["win_rate_A"]
-    assert mean == 0.5 and lo == 0.4 and hi == 0.6
-    assert self_agg["coverage_overlap_A"] == (0.3, 0.3, 0.3)
+    mean, std = self_agg["win_rate_A"]
+    assert mean == 0.5 and round(std, 3) == 0.141
+    assert self_agg["coverage_overlap_A"] == (0.3, 0.0)
 
     table = format_table(agg)
-    assert "| 2v2_1M | self | 2 | 0.50 ± 0.10 |" in table
+    assert "| 2v2_1M | self | 2 | 0.50 ± 0.14 |" in table
     assert "| 2v2_1M | random | 1 | 0.80 |" in table
+
+
+def test_group_evals_excludes_paired_team_a_baseline(tmp_path):
+    _write_eval(tmp_path, "2v2_seed0_1M", "random", opponent_team="B")
+    _write_eval(tmp_path, "2v2_seed0_1M", "random", opponent_team="A")
+    groups = group_evals(str(tmp_path))
+    assert len(groups[("2v2_1M", "random")]) == 1

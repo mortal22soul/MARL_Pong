@@ -1,0 +1,58 @@
+{
+  "run": "v2_2v2_seed2_1M",
+  "requested_timesteps": 1000000,
+  "config": {
+    "env_version": "v2",
+    "collision_resolution": "closest_paddle",
+    "dt": 0.016666666666666666,
+    "serve_speed_min": 0.8049999999999999,
+    "serve_speed_max": 1.15,
+    "ball_speed_max": 1.8399999999999999,
+    "serve_angle_deg_max": 35.0,
+    "ball_radius": 0.025,
+    "hit_speedup": 1.03,
+    "paddle_smash_factor": 0.35,
+    "paddle_height": 0.34,
+    "paddle_width": 0.03,
+    "paddle_max_speed": 1.6,
+    "paddle_accel": 12.0,
+    "paddle_overlap": 0.15,
+    "paddle_x_offset": 0.92,
+    "points_to_win": 5,
+    "max_steps": 2000,
+    "reward_mode": "point_only",
+    "hit_reward": 0.05,
+    "mode": "2v2",
+    "screen_width": 800,
+    "screen_height": 600,
+    "fps": 60,
+    "agent_ids": [
+      "A1",
+      "A2",
+      "B1",
+      "B2"
+    ]
+  },
+  "ppo": {
+    "lr": 0.0003,
+    "gamma": 0.995,
+    "gae_lambda": 0.99,
+    "clip_eps": 0.2,
+    "epochs": 4,
+    "minibatch": 256,
+    "rollout_steps": 1024,
+    "vf_coef": 0.5,
+    "ent_coef": 0.01,
+    "ent_coef_final": 0.001,
+    "total_updates": 977,
+    "max_grad_norm": 0.5,
+    "seed": 2
+  },
+  "trainable_ids": [
+    "A1",
+    "A2",
+    "B1",
+    "B2"
+  ],
+  "fixed_opponent": null
+}

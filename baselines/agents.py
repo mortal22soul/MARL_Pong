@@ -40,5 +40,71 @@ class HeuristicAgent:
         return 0
 
 
+class RangeAwareAgent:
+    """Non-coordinating baseline that stays at its assigned range midpoint.
+
+    It establishes how much positional separation comes from geometry and
+    spawn/range constraints alone, rather than learned coordination.
+    """
+
+    def __init__(self, home: float, deadzone: float = 0.03):
+        self.home = home
+        self.deadzone = deadzone
+
+    def act(self, obs: np.ndarray) -> int:
+        own_y = float(obs[0])
+        if self.home < own_y - self.deadzone:
+            return 1
+        if self.home > own_y + self.deadzone:
+            return 2
+        return 0
+
+
+class PredictiveAgent(HeuristicAgent):
+    """Same-information reference that targets the ball's paddle-line intercept.
+
+    It uses only observed ball state plus fixed public arena geometry. This is
+    a calibration reference, not a learning target or a privileged oracle.
+    """
+
+    def __init__(
+        self,
+        team: str,
+        paddle_x: float,
+        ball_radius: float,
+        home: float = 0.0,
+        deadzone: float = 0.03,
+    ):
+        super().__init__(deadzone=deadzone, team=team, home=home)
+        self.paddle_x = paddle_x
+        self.ball_radius = ball_radius
+
+    def act(self, obs: np.ndarray) -> int:
+        own_y, ball_x, ball_y, ball_vx, ball_vy = map(
+            float, (obs[0], obs[2], obs[3], obs[4], obs[5])
+        )
+        approaching = (self.team == "A" and ball_vx < 0) or (self.team == "B" and ball_vx > 0)
+        target = self.home
+        if approaching and abs(ball_vx) > 1e-8:
+            time_to_line = (self.paddle_x - ball_x) / ball_vx
+            if time_to_line >= 0:
+                target = _reflect_y(ball_y + ball_vy * time_to_line, self.ball_radius)
+        if target < own_y - self.deadzone:
+            return 1
+        if target > own_y + self.deadzone:
+            return 2
+        return 0
+
+
+def _reflect_y(y: float, radius: float) -> float:
+    """Map an unconstrained y through repeated top/bottom reflections."""
+    limit = 1.0 - radius
+    period = 4.0 * limit
+    folded = (y + limit) % period
+    if folded <= 2.0 * limit:
+        return folded - limit
+    return 3.0 * limit - folded
+
+
 def make_heuristic_team(team: str, **kw) -> HeuristicAgent:
     return HeuristicAgent(team=team, **kw)

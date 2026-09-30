@@ -1,0 +1,88 @@
+{
+  "mode": "2v2",
+  "env_version": "v2",
+  "episodes": 20,
+  "rows": [
+    {
+      "team_A_run": "v2_2v2_seed0_1M",
+      "team_B_run": "v2_2v2_seed0_1M",
+      "win_rate_A": 0.2,
+      "win_rate_B": 0.7,
+      "draw_rate": 0.1,
+      "mean_return_A": -2.05,
+      "mean_ep_len": 1481.8
+    },
+    {
+      "team_A_run": "v2_2v2_seed0_1M",
+      "team_B_run": "v2_2v2_seed1_1M",
+      "win_rate_A": 0.3,
+      "win_rate_B": 0.6,
+      "draw_rate": 0.1,
+      "mean_return_A": -1.45,
+      "mean_ep_len": 1371.35
+    },
+    {
+      "team_A_run": "v2_2v2_seed0_1M",
+      "team_B_run": "v2_2v2_seed2_1M",
+      "win_rate_A": 0.15,
+      "win_rate_B": 0.75,
+      "draw_rate": 0.1,
+      "mean_return_A": -2.75,
+      "mean_ep_len": 1493.6
+    },
+    {
+      "team_A_run": "v2_2v2_seed1_1M",
+      "team_B_run": "v2_2v2_seed0_1M",
+      "win_rate_A": 0.35,
+      "win_rate_B": 0.55,
+      "draw_rate": 0.1,
+      "mean_return_A": -0.6,
+      "mean_ep_len": 1708.35
+    },
+    {
+      "team_A_run": "v2_2v2_seed1_1M",
+      "team_B_run": "v2_2v2_seed1_1M",
+      "win_rate_A": 0.45,
+      "win_rate_B": 0.45,
+      "draw_rate": 0.1,
+      "mean_return_A": -0.3,
+      "mean_ep_len": 1561.6
+    },
+    {
+      "team_A_run": "v2_2v2_seed1_1M",
+      "team_B_run": "v2_2v2_seed2_1M",
+      "win_rate_A": 0.55,
+      "win_rate_B": 0.4,
+      "draw_rate": 0.05,
+      "mean_return_A": 0.35,
+      "mean_ep_len": 1759.35
+    },
+    {
+      "team_A_run": "v2_2v2_seed2_1M",
+      "team_B_run": "v2_2v2_seed0_1M",
+      "win_rate_A": 0.5,
+      "win_rate_B": 0.3,
+      "draw_rate": 0.2,
+      "mean_return_A": 0.7,
+      "mean_ep_len": 1818.1
+    },
+    {
+      "team_A_run": "v2_2v2_seed2_1M",
+      "team_B_run": "v2_2v2_seed1_1M",
+      "win_rate_A": 0.65,
+      "win_rate_B": 0.25,
+      "draw_rate": 0.1,
+      "mean_return_A": 0.95,
+      "mean_ep_len": 1797.7
+    },
+    {
+      "team_A_run": "v2_2v2_seed2_1M",
+      "team_B_run": "v2_2v2_seed2_1M",
+      "win_rate_A": 0.7,
+      "win_rate_B": 0.15,
+      "draw_rate": 0.15,
+      "mean_return_A": 1.4,
+      "mean_ep_len": 1837.15
+    }
+  ]
+}

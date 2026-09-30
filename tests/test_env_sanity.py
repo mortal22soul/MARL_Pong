@@ -3,7 +3,7 @@ import dataclasses
 import numpy as np
 
 from baselines.agents import HeuristicAgent, RandomAgent
-from environment.config import Config
+from environment.config import V2_CALIBRATED, Config
 from environment.pong_env import PongEnv
 
 
@@ -144,3 +144,58 @@ def test_2v2_spawn_formation_separated():
     assert env.paddles["A2"][0] < -0.2  # lower zone
     assert env.paddles["B1"][0] > 0.2
     assert env.paddles["B2"][0] < -0.2
+
+
+def test_v1_shared_region_keeps_agent_id_collision_priority():
+    cfg = dataclasses.replace(Config(), env_version="v1", collision_resolution="sequential_id")
+    env = PongEnv(config=cfg, seed=0)
+    env.reset(seed=0)
+    env.paddles["A1"] = [0.10, 0.0]
+    env.paddles["A2"] = [0.00, 0.0]
+    env.ball = [-0.90, 0.0, -1.0, 0.0]
+    _, _, _, _, info = env.step({a: 0 for a in env.agent_ids})
+    assert info["hits"]["A1"] == 1
+    assert info["hits"]["A2"] == 0
+
+
+def test_v2_shared_region_chooses_closest_paddle():
+    cfg = dataclasses.replace(Config(), env_version="v2", collision_resolution="closest_paddle")
+    env = PongEnv(config=cfg, seed=0)
+    env.reset(seed=0)
+    env.paddles["A1"] = [0.10, 0.0]
+    env.paddles["A2"] = [0.00, 0.0]
+    env.ball = [-0.90, 0.0, -1.0, 0.0]
+    _, _, _, _, info = env.step({a: 0 for a in env.agent_ids})
+    assert info["hits"]["A1"] == 0
+    assert info["hits"]["A2"] == 1
+
+
+def test_v2_collision_selection_is_symmetric_for_team_b():
+    cfg = dataclasses.replace(Config(), env_version="v2", collision_resolution="closest_paddle")
+    env = PongEnv(config=cfg, seed=0)
+    env.reset(seed=0)
+    env.paddles["B1"] = [0.10, 0.0]
+    env.paddles["B2"] = [0.00, 0.0]
+    env.ball = [0.90, 0.0, 1.0, 0.0]
+    _, _, _, _, info = env.step({a: 0 for a in env.agent_ids})
+    assert info["hits"]["B1"] == 0
+    assert info["hits"]["B2"] == 1
+
+
+def test_v2_calibrated_profile_is_frozen():
+    assert V2_CALIBRATED.env_version == "v2"
+    assert V2_CALIBRATED.collision_resolution == "closest_paddle"
+    assert V2_CALIBRATED.paddle_overlap == 0.15
+    assert V2_CALIBRATED.serve_speed_min == 0.805
+    assert V2_CALIBRATED.serve_speed_max == 1.15
+
+
+def test_shared_hit_reward_is_team_identical_diagnostic_mode():
+    cfg = dataclasses.replace(Config(), reward_mode="shared_hit", hit_reward=0.05)
+    env = PongEnv(config=cfg, seed=0)
+    env.reset(seed=0)
+    env.paddles["A1"] = [0.0, 0.0]
+    env.ball = [-0.90, 0.0, -1.0, 0.0]
+    _, rewards, _, _, _ = env.step({a: 0 for a in env.agent_ids})
+    assert rewards["A1"] == rewards["A2"] == 0.05
+    assert rewards["B1"] == rewards["B2"] == 0.0

@@ -9,6 +9,11 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True)
 class Config:
+    # --- protocol version ---
+    # v1 preserves the originally reported sequential collision behavior.
+    # v2 resolves overlaps symmetrically; it must be calibrated before PPO runs.
+    env_version: str = "v1"
+    collision_resolution: str = "sequential_id"
     # --- simulation ---
     dt: float = 1.0 / 60.0
     # Ball serve: uniform angle in [-max, +max] degrees off horizontal, random side,
@@ -28,6 +33,7 @@ class Config:
     paddle_width: float = 0.03
     paddle_max_speed: float = 1.6  # normalized units / second
     paddle_accel: float = 12.0  # approach to target velocity (inertia)
+    paddle_brake_accel: float = 24.0  # deceleration when action=stay
     # Vertical range each paddle may occupy, as (center, half_height) in y.
     # Overlap is the TEMPORARY default; final value is frozen later via
     # heuristic-only sweep per TASK.md (not tuned to PPO).
@@ -38,6 +44,11 @@ class Config:
     # --- episode ---
     points_to_win: int = 5
     max_steps: int = 2000  # prevents infinite rallies stalling training
+    # reward_mode: "point_only" (macro points only), "shared_hit" (team hit reward),
+    # or "shaped" (hit_reward to hitter, team_hit_reward to teammate).
+    reward_mode: str = "shaped"
+    hit_reward: float = 0.2
+    team_hit_reward: float = 0.1
     # "2v2" (A1,A2 vs B1,B2, overlapping partial ranges) or
     # "1v1" (A1 vs B1, each covering the full field height).
     mode: str = "2v2"
@@ -70,3 +81,19 @@ class Config:
 
 
 DEFAULT = Config()
+
+
+V2_DEFAULT = Config(env_version="v2", collision_resolution="closest_paddle")
+
+# Frozen from results/calibration_v2.json on 2026-09-30. Scripted-only tests
+# found that this smallest tested overlap keeps a meaningful shared region;
+# scale 1.15 makes reactive tracking imperfect while predictive tracking stays
+# stronger. Main v2 PPO runs must use this profile unchanged.
+V2_CALIBRATED = Config(
+    env_version="v2",
+    collision_resolution="closest_paddle",
+    paddle_overlap=0.15,
+    serve_speed_min=0.805,
+    serve_speed_max=1.15,
+    ball_speed_max=1.84,
+)

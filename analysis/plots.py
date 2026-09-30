@@ -167,12 +167,14 @@ def overlap_at_checkpoints(
 
 def _short_eval(cfg, state, episodes: int, base_seed: int) -> float:
     from agents.multi_agent_ppo import IndependentPPO, PPOConfig
+    from agents.policies import ActorCritic
     from environment.pong_env import PongEnv
 
     env = PongEnv(config=cfg, seed=base_seed)
     trainer = IndependentPPO(env.agent_ids, cfg=PPOConfig())
     for a in trainer.ids:
-        trainer.nets[a].load_state_dict(state[a])
+        sd = ActorCritic._load_state_dict_compat(state[a])
+        trainer.nets[a].load_state_dict(sd)
         trainer.nets[a].eval()
     ys = {a: [] for a in ("A1", "A2")}
     for ep in range(episodes):

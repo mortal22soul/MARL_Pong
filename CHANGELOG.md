@@ -7,6 +7,17 @@ ad-hoc pre-1.0 while the game is built ahead of the RL phase in `TASK.md`.
 ## [Unreleased]
 
 ### Added
+- Versioned v2 environment path: closest-paddle collision resolution,
+  per-paddle contact telemetry, scripted-only calibration harness, and a
+  range-aware / reactive / predictive / random baseline ladder.
+- Stationary-opponent PPO support (`--train-team`, `--opponent`), exact
+  transition budgets, entropy annealing, PPO optimizer diagnostics,
+  side-swapped scripted evaluation, and checkpoint selection utility.
+- Frozen v2 calibration profile from `results/calibration_v2.json`:
+  `paddle_overlap=0.15`, `ball_speed_scale=1.15`.
+- Per-agent evaluation behavior: defense-time y/error, action probabilities,
+  contacts, team contact share, and home-position separation. Added cross-play
+  matrix and frozen-checkpoint opponent support.
 - Presentation deck (`report/marl_pong_presentation.pptx`, built by
   `report/build_deck.js`): findings, figures, and eval numbers for the
   final talk, with speaker notes.
@@ -21,6 +32,11 @@ ad-hoc pre-1.0 while the game is built ahead of the RL phase in `TASK.md`.
   imageio-ffmpeg dependencies.
 
 ### Changed
+- v1 remains the reported historical environment; v2 is opt-in and must be
+  calibrated and frozen before new PPO headline runs.
+- Summary aggregation now excludes paired side-swapped diagnostics from the
+  seed count and reports sample standard deviation instead of max-distance
+  spread.
 - Learning-curve plots are now NaN-aware and rolling-smoothed (per-iteration
   logs are single-episode samples); `plot_learning_curves` takes a title.
 - Seed-0 eval records superseded by the uniform 60-episode pass; the earlier

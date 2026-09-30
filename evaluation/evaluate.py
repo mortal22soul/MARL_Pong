@@ -20,7 +20,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 
 from agents.multi_agent_ppo import IndependentPPO, PPOConfig
-from environment.config import Config
+from agents.policies import ActorCritic
+from baselines.agents import HeuristicAgent, PredictiveAgent, RandomAgent, RangeAwareAgent
+from environment.config import V2_CALIBRATED, Config
 from environment.pong_env import PongEnv
 
 
@@ -38,27 +40,62 @@ def evaluate_weights(
     base_seed: int = 1000,
     save_npz: str | None = None,
     opponent: str = "self",
+    opponent_team: str = "B",
 ) -> dict:
-    """opponent: 'self' (both teams trained), 'heuristic' / 'random' (team B replaced)."""
-    from baselines.agents import HeuristicAgent, RandomAgent
+    """Evaluate full or partial checkpoints against a scripted team.
 
+    ``opponent_team`` permits paired side-swapped tests. A partial checkpoint
+    is valid only when every missing agent belongs to the scripted team.
+    """
+    if opponent_team not in ("A", "B"):
+        raise ValueError("opponent_team must be 'A' or 'B'")
     env = PongEnv(config=cfg, seed=base_seed)
-    trainer = IndependentPPO(env.agent_ids, cfg=PPOConfig())
     subs = {}
     if opponent != "self":
-        for i, b in enumerate([a for a in env.agent_ids if a.startswith("B")]):
+        for i, b in enumerate([a for a in env.agent_ids if a.startswith(opponent_team)]):
             lo, hi = env._allowed_range(b)
             subs[b] = (
-                HeuristicAgent(team="B", home=(lo + hi) / 2.0)
-                if opponent == "heuristic"
-                else RandomAgent(seed=500 + i)
+                RandomAgent(seed=500 + i)
+                if opponent == "random"
+                else (
+                    RangeAwareAgent(home=(lo + hi) / 2.0)
+                    if opponent == "range"
+                    else (
+                        HeuristicAgent(team=opponent_team, home=(lo + hi) / 2.0)
+                        if opponent in ("heuristic", "reactive")
+                        else PredictiveAgent(
+                            opponent_team,
+                            (
+                                -env.cfg.paddle_x_offset
+                                if opponent_team == "A"
+                                else env.cfg.paddle_x_offset
+                            ),
+                            env.cfg.ball_radius,
+                            home=(lo + hi) / 2.0,
+                        )
+                    )
+                )
             )
+    learned_ids = list(state)
+    if opponent == "self" and set(learned_ids) != set(env.agent_ids):
+        raise ValueError("self-play evaluation requires weights for every agent")
+    missing = set(env.agent_ids) - set(learned_ids) - set(subs)
+    if missing:
+        raise ValueError(f"weights/baseline do not supply agents: {sorted(missing)}")
+    trainer = IndependentPPO(
+        env.agent_ids, cfg=PPOConfig(), trainable_ids=learned_ids, opponents=subs
+    )
     for a in trainer.ids:
-        trainer.nets[a].load_state_dict(state[a])
+        sd = ActorCritic._load_state_dict_compat(state[a])
+        trainer.nets[a].load_state_dict(sd)
         trainer.nets[a].eval()
     wins = {"A": 0, "B": 0, "draw": 0}
     returns, lens = [], []
     trajs: dict[str, list[np.ndarray]] = {a: [] for a in env.agent_ids}
+    defending_y: dict[str, list[float]] = {a: [] for a in env.agent_ids}
+    defending_error: dict[str, list[float]] = {a: [] for a in env.agent_ids}
+    action_counts = {a: np.zeros(3, dtype=np.int64) for a in env.agent_ids}
+    contacts = {a: 0 for a in env.agent_ids}
     for ep in range(episodes):
         obs, _ = env.reset(seed=base_seed + ep)
         ys: dict[str, list[float]] = {a: [] for a in env.agent_ids}
@@ -67,8 +104,14 @@ def evaluate_weights(
             actions = {}
             for a, o in obs.items():
                 actions[a] = subs[a].act(o) if a in subs else trainer.nets[a].greedy(o)
+                action_counts[a][actions[a]] += 1
             for a in env.agent_ids:
                 ys[a].append(env.paddles[a][0])
+            defending_team = "A" if env.ball[2] < 0 else "B"
+            for a in env.agent_ids:
+                if a.startswith(defending_team):
+                    defending_y[a].append(env.paddles[a][0])
+                    defending_error[a].append(abs(env.paddles[a][0] - env.ball[1]))
             obs, _, term, trunc, info = env.step(actions)
             done = all(term.values()) or all(trunc.values())
         for a in env.agent_ids:
@@ -76,6 +119,8 @@ def evaluate_weights(
         sa, sb = info["scores"]["A"], info["scores"]["B"]
         returns.append(sa - sb)
         lens.append(info["steps"])
+        for a in env.agent_ids:
+            contacts[a] += info["hits"][a]
         wins["A" if sa > sb else ("B" if sb > sa else "draw")] += 1
     spec: dict[str, dict] = {}
     for team in ("A", "B"):
@@ -92,6 +137,31 @@ def evaluate_weights(
         }
         if len(mates) == 2:
             spec[team]["coverage_overlap"] = hist_overlap(pooled[mates[0]], pooled[mates[1]])
+            spec[team]["home_separation"] = abs(
+                spec[team][mates[0]]["mean_y"] - spec[team][mates[1]]["mean_y"]
+            )
+    behavior = {}
+    for a in env.agent_ids:
+        total_actions = int(action_counts[a].sum())
+        behavior[a] = {
+            "action_probs": (
+                (action_counts[a] / total_actions).tolist() if total_actions else [0.0, 0.0, 0.0]
+            ),
+            "defending_mean_y": float(np.mean(defending_y[a])) if defending_y[a] else None,
+            "defending_ball_error": (
+                float(np.mean(defending_error[a])) if defending_error[a] else None
+            ),
+            "defending_samples": len(defending_y[a]),
+            "contacts": contacts[a],
+            "contacts_per_episode": contacts[a] / episodes,
+        }
+    for team in ("A", "B"):
+        mates = [a for a in env.agent_ids if a.startswith(team)]
+        total_contacts = sum(contacts[a] for a in mates)
+        for a in mates:
+            behavior[a]["team_contact_share"] = (
+                contacts[a] / total_contacts if total_contacts else 0.0
+            )
     out = {
         "mode": cfg.mode,
         "episodes": episodes,
@@ -101,7 +171,10 @@ def evaluate_weights(
         "mean_return_A": float(np.mean(returns)),
         "var_return_A": float(np.var(returns)),
         "mean_ep_len": float(np.mean(lens)),
+        "opponent": opponent,
+        "opponent_team": opponent_team if opponent != "self" else None,
         "specialization": spec,
+        "behavior": behavior,
     }
     if save_npz:
         np.savez_compressed(
@@ -113,19 +186,48 @@ def evaluate_weights(
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["1v1", "2v2"], default="2v2")
+    ap.add_argument("--env-version", choices=["v1", "v2"], default="v1")
+    ap.add_argument("--paddle-overlap", type=float, default=None)
+    ap.add_argument("--ball-speed-scale", type=float, default=None)
     ap.add_argument("--weights", required=True, help="checkpoint .pt holding all agents")
     ap.add_argument("--episodes", type=int, default=20)
     ap.add_argument("--seed", type=int, default=1000)
     ap.add_argument("--points", type=int, default=5)
+    ap.add_argument("--reward-mode", choices=["point_only", "shared_hit"], default="point_only")
+    ap.add_argument("--hit-reward", type=float, default=0.05)
     ap.add_argument("--out-json", default=None)
     ap.add_argument("--out-npz", default=None)
-    ap.add_argument("--opponent", choices=["self", "heuristic", "random"], default="self")
+    ap.add_argument(
+        "--opponent",
+        choices=["self", "random", "range", "heuristic", "reactive", "predictive"],
+        default="self",
+    )
+    ap.add_argument("--opponent-team", choices=["A", "B"], default="B")
     args = ap.parse_args()
     import torch
 
-    cfg = dataclasses.replace(Config(), mode=args.mode, points_to_win=args.points)
+    base_cfg = V2_CALIBRATED if args.env_version == "v2" else Config()
+    speed_source = Config() if args.ball_speed_scale is not None else base_cfg
+    speed_scale = args.ball_speed_scale if args.ball_speed_scale is not None else 1.0
+    cfg = dataclasses.replace(
+        base_cfg,
+        mode=args.mode,
+        points_to_win=args.points,
+        env_version=args.env_version,
+        collision_resolution="closest_paddle" if args.env_version == "v2" else "sequential_id",
+        paddle_overlap=(
+            args.paddle_overlap if args.paddle_overlap is not None else base_cfg.paddle_overlap
+        ),
+        serve_speed_min=speed_source.serve_speed_min * speed_scale,
+        serve_speed_max=speed_source.serve_speed_max * speed_scale,
+        ball_speed_max=speed_source.ball_speed_max * speed_scale,
+        reward_mode=args.reward_mode,
+        hit_reward=args.hit_reward,
+    )
     state = torch.load(args.weights, map_location="cpu", weights_only=True)
-    out = evaluate_weights(cfg, state, args.episodes, args.seed, args.out_npz, args.opponent)
+    out = evaluate_weights(
+        cfg, state, args.episodes, args.seed, args.out_npz, args.opponent, args.opponent_team
+    )
     print(json.dumps(out, indent=2))
     if args.out_json:
         with open(args.out_json, "w") as f:

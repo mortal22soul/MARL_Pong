@@ -1,7 +1,7 @@
 """Aggregate eval JSONs into a cross-seed summary table for the report.
 
-Groups results/eval_*.json by condition (run name minus the seed suffix) and
-opponent, then reports mean ± spread across seeds for the TASK.md §8 metrics.
+Groups the standard Team-A-versus-baseline evaluations by condition and
+opponent, then reports mean ± sample standard deviation across seeds.
 """
 
 from __future__ import annotations
@@ -33,6 +33,11 @@ def group_evals(results_dir: str = "results") -> dict[tuple[str, str], list[dict
             data = json.load(f)
         if "run" not in data or "opponent" not in data:
             continue  # legacy records without the grouping keys
+        # Paired Team-A-baseline files are valuable for side diagnostics but
+        # are not independent seeds and must not double-count the headline
+        # Team-A-versus-Team-B baseline summary.
+        if data["opponent"] != "self" and data.get("opponent_team") == "A":
+            continue
         key = (condition_of(data["run"]), data["opponent"])
         groups.setdefault(key, []).append(data)
     return groups
@@ -45,7 +50,8 @@ def aggregate(groups: dict[tuple[str, str], list[dict]]) -> dict[tuple[str, str]
         for m in METRICS:
             vals = np.asarray([r[m] for r in runs if m in r], dtype=np.float64)
             if len(vals):
-                agg[m] = (float(vals.mean()), float(vals.min()), float(vals.max()))
+                std = float(vals.std(ddof=1)) if len(vals) > 1 else 0.0
+                agg[m] = (float(vals.mean()), std)
         overlaps = [
             r["specialization"]["A"]["coverage_overlap"]
             for r in runs
@@ -53,7 +59,8 @@ def aggregate(groups: dict[tuple[str, str], list[dict]]) -> dict[tuple[str, str]
         ]
         if overlaps:
             vals = np.asarray(overlaps, dtype=np.float64)
-            agg["coverage_overlap_A"] = (float(vals.mean()), float(vals.min()), float(vals.max()))
+            std = float(vals.std(ddof=1)) if len(vals) > 1 else 0.0
+            agg["coverage_overlap_A"] = (float(vals.mean()), std)
         out[key] = agg
     return out
 
@@ -68,12 +75,8 @@ def format_table(agg: dict[tuple[str, str], dict]) -> str:
         def cell(metric, a=a):
             if metric not in a:
                 return "-"
-            mean, lo, hi = a[metric]
-            return (
-                f"{mean:.2f} ± {max(hi - mean, mean - lo):.2f}"
-                if a["n_seeds"] > 1
-                else f"{mean:.2f}"
-            )
+            mean, std = a[metric]
+            return f"{mean:.2f} ± {std:.2f}" if a["n_seeds"] > 1 else f"{mean:.2f}"
 
         lines.append(
             f"| {cond} | {opp} | {a['n_seeds']} | {cell('win_rate_A')} | "

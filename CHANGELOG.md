@@ -7,6 +7,8 @@ ad-hoc pre-1.0 while the game is built ahead of the RL phase in `TASK.md`.
 ## [Unreleased]
 
 ### Added
+- `HOW_TO_RUN.md`: manual command reference for demos, dual-paddle controls,
+  trained playback, evaluation, calibration, analysis, and PPO conditions.
 - Versioned v2 environment path: closest-paddle collision resolution,
   per-paddle contact telemetry, scripted-only calibration harness, and a
   range-aware / reactive / predictive / random baseline ladder.

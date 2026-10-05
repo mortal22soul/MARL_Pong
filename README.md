@@ -2,6 +2,8 @@
 
 Complete course project implementing the TASK.md specification: four independent PPO agents learning 2v2 Pong with a shared team reward, no communication, no parameter sharing, and no centralized critic.
 
+For a complete command reference, see [HOW_TO_RUN.md](HOW_TO_RUN.md).
+
 ## Quickstart
 
 ```bash

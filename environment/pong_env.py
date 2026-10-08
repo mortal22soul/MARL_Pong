@@ -24,22 +24,11 @@ class PongEnv:
     metadata: ClassVar[dict] = {"render_modes": [None, "human"]}
 
     def __init__(self, config: Config = DEFAULT, render_mode=None, seed: int | None = None):
-        if config.mode not in ("1v1", "2v2"):
-            raise ValueError(f"unknown mode {config.mode!r}; expected '1v1' or '2v2'")
-        if config.collision_resolution not in ("sequential_id", "closest_paddle"):
-            raise ValueError(
-                "unknown collision resolution "
-                f"{config.collision_resolution!r}; expected 'sequential_id' or 'closest_paddle'"
-            )
-        if config.reward_mode not in ("point_only", "shared_hit", "shaped"):
-            raise ValueError(
-                f"unknown reward mode {config.reward_mode!r}; expected 'point_only', 'shared_hit', or 'shaped'"
-            )
         self.cfg = config
         self.render_mode = render_mode
         self._rng = random.Random(seed)
         self._np_rng = np.random.default_rng(seed)
-        ids = ["A1", "B1"] if config.mode == "1v1" else list(config.agent_ids)
+        ids = list(config.agent_ids)
         self.agent_ids: list[str] = ids
         self.action_space = spaces.Dict({a: spaces.Discrete(3) for a in ids})
         lo = np.array([-1.0, -2.0, -1.1, -1.0, -2.0, -2.0, -1.0, -2.0], dtype=np.float32)
@@ -55,14 +44,11 @@ class PongEnv:
             self._rng = random.Random(seed)
             self._np_rng = np.random.default_rng(seed)
         # Paddles spawn in their own zones (upper/lower quartile of their range),
-        # not stacked at center — like a doubles formation. 1v1 spawns center.
+        # not stacked at center — like a doubles formation.
         self.paddles: dict[str, list[float]] = {}
         for a in self.agent_ids:
             lo, hi = self._allowed_range(a)
-            if self.cfg.mode == "1v1":
-                y0 = 0.0
-            else:
-                y0 = lo + 0.75 * (hi - lo) if self._slot(a) == 0 else lo + 0.25 * (hi - lo)
+            y0 = lo + 0.75 * (hi - lo) if self._slot(a) == 0 else lo + 0.25 * (hi - lo)
             self.paddles[a] = [y0, 0.0]
         self.scores = {"A": 0, "B": 0}
         self.hits = {a: 0 for a in self.agent_ids}
@@ -75,10 +61,7 @@ class PongEnv:
         return 0 if agent in ("A1", "B1") else 1
 
     def _allowed_range(self, agent: str) -> tuple[float, float]:
-        """Movement limits for a paddle center. 1v1 covers the full field."""
-        if self.cfg.mode == "1v1":
-            limit = 1.0 - self.cfg.paddle_height / 2.0
-            return (-limit, limit)
+        """Movement limits for a paddle center."""
         return self.cfg.paddle_range(self._slot(agent))
 
     def _side(self, agent: str) -> str:
@@ -94,11 +77,8 @@ class PongEnv:
         return "middle"
 
     def _mate(self, agent: str) -> str:
-        if len(self.agent_ids) <= 2:
-            return agent  # 1v1: mate fields mirror self
         team = agent[0]
-        others = [a for a in self.agent_ids if a.startswith(team) and a != agent]
-        return others[0] if others else agent
+        return next(a for a in self.agent_ids if a.startswith(team) and a != agent)
 
     def _serve(self, toward: str | None = None):
         cfg = self.cfg
@@ -121,57 +101,29 @@ class PongEnv:
             self.paddles[a] = [y, vy]
         px, py, vx, vy = self.ball
         px, py, vx, vy = physics.step_ball(px, py, vx, vy, cfg)
-        hit_agent = None
-        if cfg.collision_resolution == "sequential_id":
-            # v1 behavior: fixed dictionary/agent-ID ordering determines a
-            # shared-region collision. Retained for reproducibility only.
-            for a in self.agent_ids:
-                side = self._side(a)
-                if (side == "left" and vx < 0) or (side == "right" and vx > 0):
-                    px, vx, vy, hit = physics.paddle_collision(
-                        px, py, vx, vy, self.paddles[a][0], side, cfg, self.paddles[a][1]
-                    )
-                    if hit:
-                        self.hits[a] += 1
-                        self.contact_regions[a][self._contact_region(py)] += 1
-                        hit_agent = a
-        else:
-            # v2 behavior: pick from simultaneous candidates before velocity
-            # changes. Closest vertical center wins; agent ID breaks an exact,
-            # measure-zero tie consistently on both teams.
-            side = "left" if vx < 0 else "right"
-            candidates = [
-                a
-                for a in self.agent_ids
-                if self._side(a) == side
-                and physics.paddle_overlaps_ball(px, py, vx, self.paddles[a][0], side, cfg)
-            ]
-            if candidates:
-                chosen = min(candidates, key=lambda a: (abs(py - self.paddles[a][0]), a))
-                px, vx, vy, hit = physics.paddle_collision(
-                    px, py, vx, vy, self.paddles[chosen][0], side, cfg, self.paddles[chosen][1]
-                )
-                if hit:
-                    self.hits[chosen] += 1
-                    self.contact_regions[chosen][self._contact_region(py)] += 1
-                    hit_agent = chosen
+        # Pick from simultaneous candidates before velocity changes, so
+        # overlapping teammates get no fixed-order priority. Closest vertical
+        # center wins; agent ID breaks an exact, measure-zero tie consistently.
+        side = "left" if vx < 0 else "right"
+        candidates = [
+            a
+            for a in self.agent_ids
+            if self._side(a) == side
+            and physics.paddle_overlaps_ball(px, py, vx, self.paddles[a][0], side, cfg)
+        ]
+        if candidates:
+            chosen = min(candidates, key=lambda a: (abs(py - self.paddles[a][0]), a))
+            px, vx, vy, hit = physics.paddle_collision(
+                px, py, vx, vy, self.paddles[chosen][0], side, cfg, self.paddles[chosen][1]
+            )
+            if hit:
+                self.hits[chosen] += 1
+                self.contact_regions[chosen][self._contact_region(py)] += 1
         self.ball = [px, py, vx, vy]
         self.steps += 1
 
         scorer = physics.check_score(px)
         rewards = {a: 0.0 for a in self.agent_ids}
-        if hit_agent is not None:
-            hit_team = hit_agent[0]
-            if cfg.reward_mode == "shared_hit":
-                for a in self.agent_ids:
-                    if a.startswith(hit_team):
-                        rewards[a] = cfg.hit_reward
-            elif cfg.reward_mode == "shaped":
-                for a in self.agent_ids:
-                    if a == hit_agent:
-                        rewards[a] = cfg.hit_reward
-                    elif a.startswith(hit_team):
-                        rewards[a] = getattr(cfg, "team_hit_reward", 0.1)
         terminated = {a: False for a in self.agent_ids}
         if scorer is not None:
             self.scores[scorer] += 1
@@ -212,7 +164,7 @@ class PongEnv:
         if self._screen is None:
             pygame.init()
             self._screen = pygame.display.set_mode((self.cfg.screen_width, self.cfg.screen_height))
-            pygame.display.set_caption(f"marl-pong {self.cfg.mode}")
+            pygame.display.set_caption("marl-pong 2v2")
             self._clock = pygame.time.Clock()
         s = self._screen
         s.fill((10, 10, 18))
@@ -221,14 +173,7 @@ class PongEnv:
         import pygame as pg
 
         pg.draw.line(s, (60, 60, 80), (w // 2, 0), (w // 2, h), 2)
-        ranges = (
-            [self._allowed_range("A1")]
-            if self.cfg.mode == "1v1"
-            else [
-                self.cfg.paddle_range(0),
-                self.cfg.paddle_range(1),
-            ]
-        )
+        ranges = [self.cfg.paddle_range(0), self.cfg.paddle_range(1)]
         for (lo, hi), color in zip(ranges, ((40, 90, 40), (90, 40, 40))):
             _, y0 = self._to_px(0, lo)
             _, y1 = self._to_px(0, hi)

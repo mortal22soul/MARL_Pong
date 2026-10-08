@@ -36,12 +36,11 @@ def _tiny_state():
 
 
 def test_evaluate_weights_metrics_and_npz(tmp_path):
-    cfg = dataclasses.replace(Config(), mode="2v2", max_steps=150, points_to_win=1)
+    cfg = dataclasses.replace(Config(), max_steps=150, points_to_win=1)
     state = _tiny_state()
     npz_path = str(tmp_path / "traj.npz")
     out = evaluate_weights(cfg, state, episodes=2, save_npz=npz_path)
 
-    assert out["mode"] == "2v2"
     assert out["episodes"] == 2
     # Every episode ends in a win for one team or a draw; rates are fractions.
     rate_sum = out["win_rate_A"] + out["win_rate_B"] + out["draw_rate"]
@@ -73,7 +72,7 @@ def test_evaluate_weights_metrics_and_npz(tmp_path):
 
 
 def test_evaluate_weights_substituted_random_opponent():
-    cfg = dataclasses.replace(Config(), mode="2v2", max_steps=150, points_to_win=1)
+    cfg = dataclasses.replace(Config(), max_steps=150, points_to_win=1)
     state = _tiny_state()
     out = evaluate_weights(cfg, state, episodes=2, opponent="random")
     # Team B paddles were replaced by scripted agents: no B specialization rows
@@ -82,36 +81,24 @@ def test_evaluate_weights_substituted_random_opponent():
     assert out["win_rate_A"] + out["win_rate_B"] + out["draw_rate"] == 1.0
 
 
-def test_evaluate_partial_team_checkpoint_against_side_swapped_baseline():
-    cfg = dataclasses.replace(Config(), mode="2v2", max_steps=150, points_to_win=1)
-    env = PongEnv(config=cfg, seed=0)
-    learner = IndependentPPO(
-        env.agent_ids, trainable_ids=["B1", "B2"], opponents={"A1": None, "A2": None}
-    )
-    state = {a: learner.nets[a].state_dict() for a in learner.ids}
-    out = evaluate_weights(cfg, state, episodes=2, opponent="random", opponent_team="A")
+def test_evaluate_side_swapped_baseline_replaces_team_a():
+    cfg = dataclasses.replace(Config(), max_steps=150, points_to_win=1)
+    out = evaluate_weights(cfg, _tiny_state(), episodes=2, opponent="random", opponent_team="A")
     assert out["opponent_team"] == "A"
     assert out["episodes"] == 2
 
 
-def test_evaluate_partial_team_checkpoint_against_frozen_checkpoint():
-    cfg = dataclasses.replace(Config(), mode="2v2", max_steps=150, points_to_win=1)
-    full = _tiny_state()
-    learned_a = {a: full[a] for a in ("A1", "A2")}
-    out = evaluate_weights(
-        cfg,
-        learned_a,
-        episodes=2,
-        opponent="checkpoint",
-        opponent_team="B",
-        opponent_state=full,
-    )
-    assert out["opponent"] == "checkpoint"
-    assert out["episodes"] == 2
+def test_evaluate_rejects_partial_checkpoint_for_self_play():
+    import pytest
+
+    cfg = dataclasses.replace(Config(), max_steps=150, points_to_win=1)
+    state = {a: w for a, w in _tiny_state().items() if a.startswith("A")}
+    with pytest.raises(ValueError):
+        evaluate_weights(cfg, state, episodes=1)
 
 
 def test_evaluate_weights_deterministic_for_fixed_seed():
-    cfg = dataclasses.replace(Config(), mode="2v2", max_steps=150, points_to_win=1)
+    cfg = dataclasses.replace(Config(), max_steps=150, points_to_win=1)
     state = _tiny_state()
     a = evaluate_weights(cfg, state, episodes=2, base_seed=42)
     b = evaluate_weights(cfg, state, episodes=2, base_seed=42)

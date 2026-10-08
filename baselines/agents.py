@@ -104,7 +104,3 @@ def _reflect_y(y: float, radius: float) -> float:
     if folded <= 2.0 * limit:
         return folded - limit
     return 3.0 * limit - folded
-
-
-def make_heuristic_team(team: str, **kw) -> HeuristicAgent:
-    return HeuristicAgent(team=team, **kw)

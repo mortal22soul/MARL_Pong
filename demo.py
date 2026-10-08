@@ -4,7 +4,7 @@ import argparse
 import os
 
 from baselines.agents import HeuristicAgent, RandomAgent
-from environment.config import V2_CALIBRATED, Config
+from environment.config import Config
 from environment.pong_env import PongEnv
 
 
@@ -16,17 +16,15 @@ def main() -> None:
         "--human-both", action="store_true", help="control both A1 (W/S) and A2 (Up/Down)"
     )
     ap.add_argument("--episodes", type=int, default=3)
+    ap.add_argument("--seed", type=int, default=0, help="seed of the first episode")
     ap.add_argument("--points", type=int, default=5)
     ap.add_argument(
         "--opponent",
-        choices=["heuristic", "random"],
-        default="heuristic",
-        help="Team B policy (random scores fast; heuristic defends near-perfectly).",
+        choices=["self", "heuristic", "random"],
+        default=None,
+        help="Team B policy: self (checkpoint), heuristic (reactive ball tracker), or random. "
+        "Defaults to self with --weights, else heuristic.",
     )
-    ap.add_argument("--mode", choices=["1v1", "2v2"], default="2v2")
-    ap.add_argument("--env-version", choices=["v1", "v2"], default="v1")
-    ap.add_argument("--paddle-overlap", type=float, default=None)
-    ap.add_argument("--ball-speed-scale", type=float, default=None)
     ap.add_argument(
         "--weights",
         default=None,
@@ -46,28 +44,17 @@ def main() -> None:
         ap.error("--human needs a display; drop --headless to play.")
     if args.human_both and args.headless:
         ap.error("--human-both needs a display; drop --headless to play.")
+    if args.opponent is None:
+        args.opponent = "self" if args.weights else "heuristic"
+    if args.opponent == "self" and not args.weights:
+        ap.error("--opponent self needs --weights")
     if args.record:
         # Dummy video driver lets pygame build a real surface with no window.
         os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 
     import dataclasses
 
-    base_cfg = V2_CALIBRATED if args.env_version == "v2" else Config()
-    speed_source = Config() if args.ball_speed_scale is not None else base_cfg
-    speed_scale = args.ball_speed_scale if args.ball_speed_scale is not None else 1.0
-    cfg = dataclasses.replace(
-        base_cfg,
-        points_to_win=args.points,
-        mode=args.mode,
-        env_version=args.env_version,
-        collision_resolution="closest_paddle" if args.env_version == "v2" else "sequential_id",
-        paddle_overlap=(
-            args.paddle_overlap if args.paddle_overlap is not None else base_cfg.paddle_overlap
-        ),
-        serve_speed_min=speed_source.serve_speed_min * speed_scale,
-        serve_speed_max=speed_source.serve_speed_max * speed_scale,
-        ball_speed_max=speed_source.ball_speed_max * speed_scale,
-    )
+    cfg = dataclasses.replace(Config(), points_to_win=args.points)
     if args.fps is not None:
         cfg = dataclasses.replace(cfg, fps=args.fps)
     recording = args.record is not None
@@ -92,9 +79,7 @@ def main() -> None:
 
         state = torch.load(args.weights, map_location="cpu", weights_only=True)
         if set(state) != set(env.agent_ids):
-            ap.error(
-                f"--weights is for {sorted(state)}, but --mode {args.mode} needs {env.agent_ids}"
-            )
+            ap.error(f"--weights holds {sorted(state)}, but the game needs {env.agent_ids}")
         trained = IndependentPPO(env.agent_ids)
         for a in env.agent_ids:
             trained.nets[a].load_checkpoint(state[a])
@@ -109,24 +94,21 @@ def main() -> None:
 
         writer = imageio.get_writer(args.record, fps=cfg.fps)
     if (args.human or args.human_both) and headed:
-        if args.mode == "1v1":
-            print("You play A1 (left side, full height). W=up, S=down, ESC=quit.")
+        lo, hi = cfg.paddle_range(0)
+        if args.human_both:
+            print(
+                f"You play A1 (W/S) and A2 (Up/Down) on left side. "
+                f"Regions: A1 y in [{lo:.2f}, {hi:.2f}], A2 y in "
+                f"[{cfg.paddle_range(1)[0]:.2f}, {cfg.paddle_range(1)[1]:.2f}]. "
+                "ESC=quit."
+            )
         else:
-            lo, hi = cfg.paddle_range(0)
-            if args.human_both:
-                print(
-                    f"You play A1 (W/S) and A2 (Up/Down) on left side. "
-                    f"Regions: A1 y in [{lo:.2f}, {hi:.2f}], A2 y in "
-                    f"[{cfg.paddle_range(1)[0]:.2f}, {cfg.paddle_range(1)[1]:.2f}]. "
-                    "ESC=quit."
-                )
-            else:
-                print(
-                    f"You play A1 (left side, upper region y in [{lo:.2f}, {hi:.2f}]). "
-                    "W=up, S=down, ESC=quit."
-                )
+            print(
+                f"You play A1 (left side, upper region y in [{lo:.2f}, {hi:.2f}]). "
+                "W=up, S=down, ESC=quit."
+            )
     for ep in range(args.episodes):
-        obs, _ = env.reset(seed=ep)
+        obs, _ = env.reset(seed=args.seed + ep)
         done = False
         while not done:
             human_act_a1 = 0
@@ -158,7 +140,7 @@ def main() -> None:
                     actions[a] = human_act_a1
                 elif args.human_both and a in ("A1", "A2") and headed:
                     actions[a] = human_act_a1 if a == "A1" else human_act_a2
-                elif trained is not None:
+                elif trained is not None and (a.startswith("A") or args.opponent == "self"):
                     actions[a] = trained.nets[a].greedy(o)
                 else:
                     actions[a] = agents[a].act(o)

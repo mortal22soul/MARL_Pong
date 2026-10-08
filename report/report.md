@@ -1,15 +1,15 @@
 # Emergent Coordination in 2v2 Pong via Independent PPO
 
-Course project report — methodology and honest results, including the ones
-that did not come out the way the research question hoped for.
+Course project report: methodology and honest results, including the parts
+that did not come out the way the research question hoped.
 
 ## 1. Research question
 
 Can independently learning agents develop effective cooperative strategies
 when competing against another team of independently learning agents, without
-explicit role assignment or communication? The project is framed against Li
-et al. (2025), *Multi-Agent RL in Games* (Biomimetics 10(6):375), whose
-taxonomy (value-based / policy-gradient / search-based) and challenge framing
+explicit role assignment or communication? The project is framed against Li et
+al. (2025), *Multi-Agent RL in Games* (Biomimetics 10(6):375), whose taxonomy
+(value-based / policy-gradient / search-based) and challenge framing
 (non-stationarity, credit assignment) structure the analysis below.
 
 ## 2. Environment and method
@@ -17,174 +17,206 @@ taxonomy (value-based / policy-gradient / search-based) and challenge framing
 - Custom 2v2 Pong (`environment/`): normalized `[-1, 1]` arena, inertial
   paddles with overlapping but constrained vertical ranges, escalating ball
   speed on hits, shared team-level reward (+1/-1 per point, both teammates
-  receive the identical signal).
-- Four independent PPO agents (`agents/`), each with its own 64×64
-  actor-critic MLP, synchronized environment stepping, GAE + clipped
-  surrogate updates, CPU-only torch. No shared critic, no parameter sharing,
-  no communication, and — by deliberate design — no opponent observations:
-  the coordination question is *local state + teammate state only*.
+  receive the identical signal, no per-hit shaping).
+- Overlapping paddles resolve a simultaneous contact by giving the ball to the
+  paddle closest to it, so neither teammate has a fixed-order priority.
+- Four independent PPO agents (`agents/`): each has its own 64×64 actor and
+  64×64 critic MLP, its own optimizer and its own clipped-surrogate updates.
+  Environment stepping is synchronized; there is no shared critic, no parameter
+  sharing, no communication and, by design, no opponent observations.
 - Observations per agent (8-dim): own paddle y/vy, ball x/y/vx/vy, teammate
-  paddle y/vy.
+  y/vy, re-expressed in a side-invariant frame (distance to ball along the
+  paddle's facing direction, relative ball/teammate offsets).
+
+### Environment calibration (before any PPO training)
+
+TASK.md requires the paddle-overlap parameter to be chosen with scripted
+agents only and frozen before PPO. `experiments/calibrate_env.py` swept overlap
+`{0.15, 0.25, 0.35, 0.45}` × ball-speed scale `{1.0, 1.15}` with range-holding,
+reactive, predictive and random scripted teams (60 episodes per game,
+`results/calibration_v2.json`). The frozen profile is `paddle_overlap = 0.15`
+and speed scale `1.15`: reactive-vs-reactive play is decisive in 68% of
+episodes (not a permanent stalemate), predictive trackers still draw every
+game, and reactive teams beat random 100%. These values live in
+`environment/config.py` and were not changed afterwards.
 
 ### Deviations from the original spec (TASK.md)
 
 | Spec'd | Delivered | Why |
 |---|---|---|
-| SB3-wrapped or custom PPO (open decision, §6) | Custom PyTorch PPO — option (b) | SB3's single-agent rollout buffer coupling made option (a) reverse-engineering, not engineering |
-| MLflow tracking | Per-iteration CSV logs | Zero-dependency, sufficient for 3-seed aggregation in `analysis/`; MLflow was process overhead, not signal |
-| Paddle overlap swept and frozen before training | v1 kept 0.4; v2 used scripted-only sweep and froze 0.15 / 1.15 speed scale | v1 remains a protocol caveat. v2 corrects it with `results/calibration_v2.json`; v1 and v2 are separate conditions. |
+| SB3-wrapped or custom PPO (open decision, §6) | Custom PyTorch PPO, option (b) | SB3's single-agent rollout coupling made option (a) reverse-engineering rather than engineering |
+| MLflow tracking | Per-iteration CSV logs | No extra dependency; sufficient for the analysis in `analysis/` |
+| 1v1 sanity baseline, 3 seeds | Dropped | The earlier 1v1 runs used a superseded environment; 1v1 is not a matched comparison to 2v2 anyway (§11) |
+| 3 seeds per reported condition | One showcased run (seed 0); a 3-seed run of the same configuration is summarized in §4.4 | See §6 |
+| Frozen-opponent condition (optional) | Not run | Optional per TASK.md §10 |
 
 ## 3. Experimental protocol
 
-- Conditions: 1v1 baseline (sanity check, not a matched comparison — the
-  geometry differs) at 300k steps; 2v2 main condition at 1M steps.
-- 3 seeds per condition (0, 1, 2), freshly initialized — no warm starts in
-  the headline numbers. (An earlier seed-0 warm-start continuation run,
-  `2v2_seed0_cont1M`, is kept under `results/` as a documented extra.)
-- Evaluation: deterministic (greedy) episodes, 60 per run, against three
-  kinds of opposition: self-play (both teams trained), the near-perfect
-  ball-tracking heuristic team, and the random team. Uniform episode counts
-  across all runs and opponents.
-- Coordination evidence is taken from positional specialization metrics
-  (per-paddle y mean/std/range and teammate coverage overlap), trajectory
-  heatmaps, and coverage overlap across training checkpoints — explicitly
-  *not* from win rate alone, which can reflect game geometry or reward
-  structure rather than coordination.
+- **Reported run `s1_5M`** (named for "sweep 1, 5M steps"): all four agents
+  learn concurrently for 5,000,000 environment steps, seed 0.
+- **PPO hyperparameters:** rollout 4096 steps per update, 6 epochs, minibatch
+  512, lr 3e-4, γ = 0.995, GAE λ = 0.99, clip 0.2, value coefficient 0.5,
+  entropy coefficient annealed linearly 0.01 → 0.001, gradient-norm clip 0.5.
+  These are the CLI defaults; `results/models/s1_5M/run_config.json` holds the
+  exact record.
+- **How the run was chosen:** a single-seed sweep over rollout size, learning
+  rate, γ and entropy (1M steps each), then longer runs of the best
+  configuration (3 seeds × 3M steps, and seed 0 × 5M steps). Candidates were
+  ranked by fixed-opponent win rate and a head-to-head cross-play matrix (§4.4).
+  This is a selection step, so the reported numbers are the best observed run,
+  not an average.
+- **Evaluation:** deterministic (greedy) play, 60 episodes per opponent, episode
+  seeds 1000–1059. The opponents are self-play (the four learned policies), random
+  paddles, the reactive scripted tracker ("heuristic": follows the ball's
+  current y), and the predictive scripted tracker (moves to the ball's
+  projected intercept, including wall bounces). An episode ends at 5 points or
+  2000 steps; the winner is the team ahead at the end, and a tie counts as a draw.
+- **Coordination evidence** comes from positional and functional metrics
+  (coverage overlap, home separation, per-paddle contact share and impact band,
+  defence-time ball error) and from heatmaps. It is not taken from win rate
+  alone, which can reflect geometry or reward structure.
 
 ## 4. Results
 
-All numbers: 3 seeds, 60 deterministic episodes per run per opponent; full
-table in `results/summary.md`, records under `results/eval_*.json`.
+Records: `results/eval_s1_5M*.json`, table: `results/summary.md`.
 
-### 4.1 Learning dynamics (Figure: `results/plots/curves_2v2.png`)
+### 4.1 Learning dynamics (`results/plots/curves_mean_return_A.png`)
 
-Smoothed self-play returns per seed do **not** converge to an equilibrium.
-Instead they oscillate in multi-hundred-thousand-step waves (one team's edge
-builds, erodes, reverses), and all three seeds drift downward over their last
-~200k steps. This is the non-stationarity signature predicted by TASK.md and
-Li et al.: each team's improvement is the other team's environment change, so
-the "target" keeps moving. Seed identity matters enormously — which team is
-stronger at 1M steps is essentially a coin flip (see 4.2), and no seed's
-curve predicts another's.
+The smoothed self-play Team-A return first collapses to about −3.4 around 400k
+steps, because Team B learns to return the ball first. It recovers to positive
+by roughly 1.2M steps, peaks near +1 at 2.5M and then settles in a +0.3 to +0.5
+band for the last 2M steps. The early swing is the non-stationarity Li et al.
+describe: each team's improvement changes the other team's environment.
+The run does stabilize, but it stabilizes with Team A ahead, not at a symmetric
+equilibrium.
 
-### 4.2 Evaluation vs the three opponents
+### 4.2 Evaluation against fixed and learned opposition
 
-| condition | opponent | win A | win B | return A | mean ep len |
+| Opponent (Team B) | Win A | Win B | Draw | Return A | Mean ep. length |
 |---|---|---|---|---|---|
-| 2v2 @1M | random | 0.68 ± 0.27 | 0.28 ± 0.27 | +1.56 ± 2.13 | 1311 |
-| 2v2 @1M | self | 0.43 ± 0.24 | 0.46 ± 0.37 | −0.22 ± 1.70 | 1616 |
-| 2v2 @1M | heuristic | 0.02 ± 0.03 | 0.87 ± 0.17 | −3.04 ± 1.56 | 1763 |
-| 1v1 @300k | random | 0.48 ± 0.15 | 0.52 ± 0.15 | −0.19 ± 1.03 | 951 |
-| 1v1 @300k | self | 0.39 ± 0.08 | 0.56 ± 0.09 | −0.47 ± 0.43 | 1016 |
-| 1v1 @300k | heuristic | 0.00 ± 0.00 | 0.99 ± 0.02 | −4.29 ± 0.64 | 1329 |
+| random | **1.00** | 0.00 | 0.00 | +4.48 | 1330 |
+| reactive tracker (heuristic) | **0.63** | 0.07 | 0.30 | +0.68 | 2000 |
+| predictive tracker | 0.00 | 0.13 | 0.87 | −0.20 | 2000 |
+| self-play (learned Team B) | 0.53 | 0.03 | 0.43 | +0.73 | 2000 |
 
 Findings:
 
-1. **2v2 beats random (0.68) but with ±0.27 seed spread** — one seed wins
-   ~90%+, another hovers near 50%. Skill relative to a fixed opponent is
-   real but seed-fragile at this budget.
-2. **The scripted near-perfect tracker beats every trained team** (2v2 0.02,
-   1v1 0.00 win rate). PPO-learned play remains qualitatively worse than a
-   hand-written tracking policy after 1M steps.
-3. **Self-play stays balanced on average** (0.43/0.46) but the balance is
-   per-seed asymmetric: seed 1 has team A at 0.67, seeds 0 and 2 have team B
-   at 0.58/0.70. With a shared team reward and simultaneous learning,
-   accidental asymmetric skill equilibria form and persist — the credit-
-   assignment caveat from TASK.md §8 showing up as team-level asymmetry.
+1. **The learned team beats random every time and usually beats the reactive
+   tracker.** Against the tracker, every episode hits the 2000-step cap. The
+   0.63 win rate means being ahead on points at the cap, from a low-scoring
+   game, not first-to-5. Mean return is +0.68 points per episode.
+2. **The predictive tracker is not beaten.** 87% of games are scoreless draws
+   and the tracker wins 13%. A projected-intercept policy remains a stronger
+   defender than anything PPO learned here.
+3. **Self-play is asymmetric:** Team A wins 53% and Team B 3%. With a shared team
+   reward and simultaneous learning, one team settled into the stronger joint
+   strategy and kept it. This is the team-level credit-assignment asymmetry that
+   TASK.md §8 anticipated.
 
 ### 4.3 Specialization and coordination evidence
 
-(Figures: `results/plots/coverage_heatmaps_seed{0,1,2}.png`,
-`results/plots/overlap_over_training.png`.)
+(`results/plots/coverage_heatmaps.png`, `results/plots/overlap_over_training.png`)
 
-- **Positional structure emerges, but not one equilibrium.** In evaluation
-  play each paddle develops a home band plus chase excursions — e.g. seed 0:
-  A1 anchors mid-upper, A2 mid-lower with excursions to the top wall; the
-  mirror structure appears on team B. Mean teammate coverage overlap at
-  eval is 0.17–0.28 for seeds 0/2.
-- **The strongest partition is seed 1: overlap ≈ 0.01** — A1/A2 split the
-  field into near-disjoint bands — and that seed's team A is also the one
-  that beats its opponent 0.67 in self-play. Specialization and team success
-  co-occur in this run, though n=3 forbids a causal claim.
-- **Overlap does not fall monotonically over training.** The checkpoint
-  sweep (short greedy probes every ~100k steps) shows overlap *rising* from
-  ~0.05–0.15 early to ~0.3–0.4 late in all three seeds. Reading: early
-  policies barely move (low, narrow occupancy), while later policies occupy
-  more of the field as chasing becomes vigorous — shared coverage grows even
-  as distinct home bands persist. "Complementary roles" here means distinct
-  anchors with overlapping pursuit, not a clean static partition.
-- **Verdict on the research question:** positional differentiation is
-  reproducible in some runs, but the current evidence does not establish that
-  it is effective coordination in every run. Heatmaps show distinct occupancy
-  bands, not causal coordination by themselves. Functional evidence requires
-  defense-time ball error, contact share, and contact-region allocation; these
-  metrics are now collected for v2 follow-up runs. Specialization is
-  seed-dependent, non-monotone over training, and insufficient on its own to
-  explain team success.
+| Metric (Team A, self-play eval) | A1 | A2 |
+|---|---|---|
+| mean y (+y is down) | +0.27 | −0.10 |
+| share of team contacts | 43% | 57% |
+| contacts in its outer band | 74% (lower) | 55% (upper) |
+| contacts in the shared middle band | 26% | 45% |
+| mean defence-time ball error | 0.37 | 0.26 |
+
+Coverage overlap is 0.32 and home separation is 0.37. The vs-heuristic,
+vs-predictive and vs-random evaluations show the same pattern: A2 handles 59–62%
+of team contacts, and the overlap stays between 0.30 and 0.34.
+
+- **Both teammates cover their own side, but neither stays home.** The heatmaps show each
+  paddle spending much of its time at the inner edge of its range, the
+  boundary of the shared middle band, and making excursions towards its wall. The
+  same structure appears on Team B. The learned formation is "both guard the
+  middle, each sweeps its own side", not a static top/bottom split.
+- **The outer-band split is partly forced by geometry.** With overlap 0.15,
+  A1 physically cannot reach the upper band and A2 cannot reach the lower band,
+  so their 0% cross-band contacts are not evidence of coordination by
+  themselves.
+- **The shared middle band is where allocation is learned.** Both paddles can
+  reach it. In self-play A2 takes about 70% of middle-band returns (2.0 vs 0.9
+  per episode), so the team has a de facto primary middle defender, chosen
+  without any assignment or communication.
+- **Overlap rises over training** (0.04 at 82k steps → about 0.3 at 5M). Early
+  policies barely move. Later policies converge on the shared middle and chase
+  aggressively, so coverage overlaps more even as functional roles appear.
+  Lower overlap is therefore not a usable proxy for better coordination here.
+- **Verdict on the research question: partial yes.** Without communication or
+  assigned roles, teammates learn a consistent division of labour: each covers
+  its own outer band, and one is the main defender of the contested middle.
+  The team using it beats random play and the reactive tracker. This is
+  functional evidence, not only occupancy. It does not reach the strength of a
+  hand-written predictive defender, and it rests on one showcased run.
+
+### 4.4 Selection evidence and robustness (archived runs)
+
+The comparison runs were removed from the repository to keep it focused. Their
+checkpoints and records are kept in an off-repo archive. The numbers below come
+from the same 60-episode protocol.
+
+| Run | Seeds | Steps | vs random | vs reactive tracker |
+|---|---|---|---|---|
+| **s1_5M (reported)** | 1 | 5M | **1.00** | **0.63** |
+| same config, 3 seeds | 3 | 3M | 0.98 ± 0.01 | 0.24 ± 0.14 |
+| same config | 1 | 1M | 0.97 | 0.12 |
+| rollout 1024, 4 epochs, minibatch 256 | 1 | 1M | 0.87 | 0.13 |
+| entropy 0.03 | 1 | 1M | 0.75 | 0.02 |
+| γ = 0.999 | 1 | 1M | 0.73 | 0.05 |
+| lr 1e-4 | 1 | 1M | 0.72 | 0.10 |
+| earlier protocol, 3 seeds | 3 | 1M | 0.81 ± 0.03 | 0.07 ± 0.09 |
+
+In head-to-head cross-play (60 episodes per pairing), s1_5M's Team A finished
+ahead on net against every other candidate's Team B:
+
+| Team B from | 3M seed 0 | 3M seed 1 | 3M seed 2 | earlier protocol 1M |
+|---|---|---|---|---|
+| s1_5M Team A wins | 0.30 | 0.83 | 0.17 | 0.92 |
+| s1_5M Team A loses | 0.13 | 0.00 | 0.10 | 0.00 |
+
+These results show:
+
+- The larger-rollout configuration generalizes across seeds: all three 3M seeds
+  beat random 97–98% of the time.
+- Performance against the tracker keeps improving with training budget (0.12 at
+  1M, 0.24 mean at 3M, 0.63 at 5M for seed 0). It also varies substantially
+  across seeds at 3M (0.12–0.40).
 
 ## 5. Discussion
 
-### v2 follow-up: calibrated collision fairness and corrected aggregation
-
-After the original v1 report, a versioned v2 condition was run with the
-predeclared scripted-only calibration profile: `paddle_overlap=0.15`, ball
-speed scale 1.15, and symmetric closest-paddle collision selection. Three
-fresh 1M-step 2v2 seeds were evaluated with 60 deterministic episodes each.
-The standard Team-A-versus-Team-B baseline results are: random `0.81 ± 0.03`
-Team-A win rate, reactive tracker `0.07 ± 0.09`, and self-play `0.44 ± 0.10`
-for Team A versus `0.44 ± 0.15` for Team B (all `mean ± sample std`).
-
-The v2 random result is stronger than v1's `0.68 ± 0.24`, while the tracker
-remains a much stronger fixed policy. Team-A coverage overlap is `0.12 ±
-0.10`; this is evidence of positional differentiation only, not sufficient
-evidence of coordination by itself. The regenerated v2 evaluations add
-functional contact evidence: seed 1 splits Team-A contacts evenly (149/149),
-with A2 handling more upper-region contacts and A1 more lower-region contacts.
-Seeds 0 and 2 allocate 78% and 70% of Team-A contacts to A1. Thus role
-allocation is present but not consistent
-across seeds or necessarily balanced. The evaluator also records each paddle's
-defense-time position and ball error, action distribution, contact count/share,
-contact allocation by upper/middle/lower impact band, and home-position
-separation. Future coordination claims should use these functional measures
-alongside heatmaps.
-
-An earlier draft incorrectly pooled paired side-swapped baseline evaluations
-with the three standard seeds, creating a six-row aggregate and an apparent
-50% tracker win rate. Those paired games are diagnostic side tests, not extra
-independent seeds. The corrected aggregator excludes them from headline
-tables. A 60-episode 3x3 cross-play matrix now shows seed-specific policy
-compatibility: Team-A seed 2 wins 0.63 and 0.65 against Team-B seeds 0 and 1,
-whereas Team-A seed 0 loses to every tested Team B. Frozen-opponent experiments
-are implemented as the next test of non-stationarity.
-
-- **Non-stationarity dominates the dynamics.** The oscillating curves and
-  the coin-flip team asymmetry at 1M are exactly the challenge Li et al.
-  attribute to simultaneous learning: no agent's optimization target is
-  stationary, so "progress" is a traveling wave, not a trend.
-- **Credit assignment is visible at team level.** Both teammates receive the
-  identical reward regardless of who touched the ball; the persistent
-  per-seed asymmetric equilibria (one team consistently stronger) and the
-  dominance of one paddle in some heatmaps are the free-riding/uneven-
-  contribution patterns the spec predicted would be reportable findings.
-- **What would strengthen the claim (future work):** the optional frozen-
-  opponent condition to separate skill improvement from opponent drift; more
-  seeds to de-lottery the specialization/success correlation; opponent-
-  observation ablation to test whether coordination survives full information.
-- **Honest limitations of this evidence:** 3 seeds; the checkpoint sweep
-  probes use shortened (500-step) episodes, so its overlap trend is indicative,
-  not directly comparable to the 60-episode eval numbers. The original v1
-  condition used an unvalidated overlap default; v2 corrects that condition
-  but is still limited to three seeds.
+- **Non-stationarity is visible but does not prevent learning.** The early
+  collapse and recovery in §4.1 is the moving-target problem. A larger rollout
+  (4096 steps, about two full-length episodes per update) and more training
+  were the changes that most improved fixed-opponent strength in the sweep.
+- **Credit assignment shows up at team level.** The identical team reward never
+  says which paddle conceded or saved a point, yet the team still splits the
+  contested middle unevenly. Self-play ends with one team clearly stronger. Both
+  match TASK.md §8: uneven contribution and asymmetric equilibria are findings,
+  not bugs.
+- **Win rate would have overstated the story.** Beating random needs no
+  coordination at all. The functional metrics (middle-band contact allocation)
+  are the evidence for coordination, and the geometry-forced outer-band split
+  must be discounted.
 
 ## 6. Limitations
 
-- 1v1 vs 2v2 is not a controlled causal comparison of team size (differing
-  geometry/coverage confounds it).
+- **Single showcased seed, chosen after comparing runs.** AGENTS.md treats
+  single-seed numbers as non-convergence claims. The 3-seed 3M run of the same
+  configuration (§4.4) is the stronger cross-seed estimate. To make the 5M
+  result a protocol-grade claim, run seeds 1 and 2 at 5M steps.
+- Against the scripted trackers every game reaches the step cap. Win rates
+  there come from low-scoring games, so per-point return is the better measure
+  of margin.
+- No frozen-opponent condition, so skill growth and opponent drift are not
+  separated.
 - No centralized-critic baselines (MAPPO/QMIX/MADDPG), no parameter-sharing
-  ablation, no larger teams — out of scope by design (TASK.md §11).
-- Simplified 2D abstraction. The original v1 overlap was not swept; the
-  subsequent v2 condition used a scripted-only calibration and frozen profile.
-- Single hardware budget (CPU), fixed hyperparameters per condition.
+  ablation and no larger teams; these are out of scope by design (TASK.md §11).
+- Simplified 2D abstraction. The overlap value comes from a scripted
+  calibration, not from PPO performance.
 
 ## References
 

@@ -18,16 +18,17 @@ from .policies import ActorCritic
 
 @dataclass
 class PPOConfig:
-    lr: float = 4e-4
+    # Defaults reproduce the reported run (results/models/s1_5M/run_config.json).
+    lr: float = 3e-4
     gamma: float = 0.995
-    gae_lambda: float = 0.98
+    gae_lambda: float = 0.99
     clip_eps: float = 0.2
-    epochs: int = 4
-    minibatch: int = 256
-    rollout_steps: int = 1024
+    epochs: int = 6
+    minibatch: int = 512
+    rollout_steps: int = 4096
     vf_coef: float = 0.5
     ent_coef: float = 0.01
-    ent_coef_final: float | None = 0.0005
+    ent_coef_final: float | None = 0.001
     total_updates: int | None = None
     max_grad_norm: float = 0.5
     seed: int = 0
@@ -64,26 +65,20 @@ class IndependentPPO:
         obs_dim: int = 8,
         n_actions: int = 3,
         cfg: PPOConfig | None = None,
-        trainable_ids: list[str] | None = None,
-        opponents: dict[str, object] | None = None,
     ):
         self.cfg = cfg or PPOConfig()
         torch.manual_seed(self.cfg.seed)
         np.random.seed(self.cfg.seed)
         self.agent_ids = list(agent_ids)
-        self.ids = list(trainable_ids) if trainable_ids is not None else list(agent_ids)
-        unknown = set(self.ids) - set(self.agent_ids)
-        if unknown:
-            raise ValueError(f"unknown trainable agents: {sorted(unknown)}")
-        self.opponents = opponents or {}
-        missing = set(self.agent_ids) - set(self.ids) - set(self.opponents)
-        if missing:
-            raise ValueError(f"missing fixed policies for non-trainable agents: {sorted(missing)}")
+        self.ids = list(agent_ids)
         self.nets = {a: ActorCritic(obs_dim, n_actions, agent_id=a) for a in self.ids}
         self.opts = {
             a: torch.optim.Adam(n.parameters(), lr=self.cfg.lr) for a, n in self.nets.items()
         }
         self.cur_obs: dict[str, np.ndarray] | None = None
+        self._rngs = {
+            a: np.random.default_rng([self.cfg.seed, i]) for i, a in enumerate(self.agent_ids)
+        }
         self.global_steps = 0
         self.updates = 0
         self.last_agent_metrics: dict[str, dict[str, float]] = {}
@@ -108,23 +103,23 @@ class IndependentPPO:
                 "terminated": np.zeros(T, np.float32),
                 "truncated": np.zeros(T, np.float32),
                 "next_val": np.zeros(T, np.float32),
+                "next_obs": np.zeros((T, 8), np.float32),
             }
             for a in ids
         }
+        samplers = {a: self.nets[a].numpy_sampler() for a in ids}
         ep_returns, ep_lens, ep_a, ep_b = [], [], [], []
         truncated_episodes = 0
         for t in range(T):
             acts: dict[str, int] = {}
-            for a in self.agent_ids:
-                if a in self.nets:
-                    act, lp, v = self.nets[a].sample(self.cur_obs[a])
-                    acts[a] = act
-                    buf[a]["obs"][t] = self.nets[a]._prep_obs(self.cur_obs[a])
-                    buf[a]["act"][t] = act
-                    buf[a]["logp"][t] = lp
-                    buf[a]["val"][t] = v
-                else:
-                    acts[a] = self.opponents[a].act(self.cur_obs[a])
+            for a in ids:
+                feat = self.nets[a]._prep_obs(self.cur_obs[a])
+                act, lp, v = samplers[a].sample(feat, self._rngs[a])
+                acts[a] = act
+                buf[a]["obs"][t] = feat
+                buf[a]["act"][t] = act
+                buf[a]["logp"][t] = lp
+                buf[a]["val"][t] = v
             nobs, rews, terms, truncs, info = env.step(acts)
             terminated = all(terms.values())
             done = terminated or all(truncs.values())
@@ -132,15 +127,8 @@ class IndependentPPO:
                 buf[a]["rew"][t] = rews[a]
                 buf[a]["terminated"][t] = 1.0 if terminated else 0.0
                 buf[a]["truncated"][t] = 1.0 if all(truncs.values()) else 0.0
-                if terminated:
-                    buf[a]["next_val"][t] = 0.0
-                else:
-                    with torch.no_grad():
-                        nfeat = self.nets[a]._prep_obs(nobs[a])
-                        _, value = self.nets[a](
-                            torch.as_tensor(nfeat, dtype=torch.float32).unsqueeze(0)
-                        )
-                        buf[a]["next_val"][t] = float(value.item())
+                if not terminated:
+                    buf[a]["next_obs"][t] = self.nets[a]._prep_obs(nobs[a])
             self.global_steps += 1
             if done:
                 ep_returns.append(info["scores"]["A"] - info["scores"]["B"])
@@ -151,6 +139,12 @@ class IndependentPPO:
                 self.cur_obs, _ = env.reset()
             else:
                 self.cur_obs = nobs
+        for a in ids:
+            live = buf[a]["terminated"] == 0.0
+            if live.any():
+                with torch.no_grad():
+                    _, nv = self.nets[a](torch.as_tensor(buf[a]["next_obs"][live]))
+                buf[a]["next_val"][live] = nv.numpy()
         # GAE uses each transition's actual next observation. Time-limit
         # truncations bootstrap; scored-terminal transitions do not.
         advs, rets = {}, {}

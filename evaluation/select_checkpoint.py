@@ -7,7 +7,6 @@ best policy reached transiently during a non-stationary run.
 from __future__ import annotations
 
 import argparse
-import dataclasses
 import json
 import os
 import sys
@@ -16,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch
 
-from environment.config import V2_CALIBRATED, Config
+from environment.config import Config
 from evaluation.evaluate import evaluate_weights
 
 
@@ -33,10 +32,6 @@ def checkpoints(run_dir: str) -> list[str]:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", required=True)
-    ap.add_argument("--mode", choices=["1v1", "2v2"], default="2v2")
-    ap.add_argument("--env-version", choices=["v1", "v2"], default="v1")
-    ap.add_argument("--paddle-overlap", type=float, default=None)
-    ap.add_argument("--ball-speed-scale", type=float, default=None)
     ap.add_argument(
         "--opponent",
         choices=["random", "range", "heuristic", "reactive", "predictive"],
@@ -48,21 +43,7 @@ def main() -> None:
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
 
-    base_cfg = V2_CALIBRATED if args.env_version == "v2" else Config()
-    speed_source = Config() if args.ball_speed_scale is not None else base_cfg
-    speed_scale = args.ball_speed_scale if args.ball_speed_scale is not None else 1.0
-    cfg = dataclasses.replace(
-        base_cfg,
-        mode=args.mode,
-        env_version=args.env_version,
-        collision_resolution="closest_paddle" if args.env_version == "v2" else "sequential_id",
-        paddle_overlap=(
-            args.paddle_overlap if args.paddle_overlap is not None else base_cfg.paddle_overlap
-        ),
-        serve_speed_min=speed_source.serve_speed_min * speed_scale,
-        serve_speed_max=speed_source.serve_speed_max * speed_scale,
-        ball_speed_max=speed_source.ball_speed_max * speed_scale,
-    )
+    cfg = Config()
     rows = []
     for path in checkpoints(args.run_dir):
         state = torch.load(path, map_location="cpu", weights_only=True)

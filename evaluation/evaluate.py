@@ -19,10 +19,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 
-from agents.frozen_policy import FrozenPolicy
-from agents.multi_agent_ppo import IndependentPPO, PPOConfig
+from agents.policies import ActorCritic
 from baselines.agents import HeuristicAgent, PredictiveAgent, RandomAgent, RangeAwareAgent
-from environment.config import V2_CALIBRATED, Config
+from environment.config import Config
 from environment.pong_env import PongEnv
 
 
@@ -33,6 +32,26 @@ def hist_overlap(y1: np.ndarray, y2: np.ndarray, bins: int = 20) -> float:
     return float(np.minimum(h1, h2).sum() / denom) if denom > 0 else 0.0
 
 
+OPPONENTS = ("self", "random", "range", "heuristic", "reactive", "predictive")
+
+
+def scripted_agent(kind: str, env: PongEnv, agent: str, index: int):
+    """Scripted baseline for one paddle; 'reactive' is an alias of 'heuristic'."""
+    lo, hi = env._allowed_range(agent)
+    home = (lo + hi) / 2.0
+    team = agent[0]
+    if kind == "random":
+        return RandomAgent(seed=500 + index)
+    if kind == "range":
+        return RangeAwareAgent(home=home)
+    if kind in ("heuristic", "reactive"):
+        return HeuristicAgent(team=team, home=home)
+    if kind == "predictive":
+        paddle_x = -env.cfg.paddle_x_offset if team == "A" else env.cfg.paddle_x_offset
+        return PredictiveAgent(team, paddle_x, env.cfg.ball_radius, home=home)
+    raise ValueError(f"unknown opponent {kind!r}; expected one of {OPPONENTS}")
+
+
 def evaluate_weights(
     cfg: Config,
     state: dict,
@@ -41,61 +60,28 @@ def evaluate_weights(
     save_npz: str | None = None,
     opponent: str = "self",
     opponent_team: str = "B",
-    opponent_state: dict | None = None,
 ) -> dict:
-    """Evaluate full or partial checkpoints against a scripted team.
+    """Evaluate a full-team checkpoint, optionally with one team scripted.
 
-    ``opponent_team`` permits paired side-swapped tests. A partial checkpoint
-    is valid only when every missing agent belongs to the scripted team.
+    ``opponent_team`` selects which side the scripted baseline replaces, which
+    permits side-swapped tests of the learned Team B.
     """
     if opponent_team not in ("A", "B"):
         raise ValueError("opponent_team must be 'A' or 'B'")
     env = PongEnv(config=cfg, seed=base_seed)
     subs = {}
-    if opponent == "checkpoint":
-        if opponent_state is None:
-            raise ValueError("checkpoint opponent evaluation requires opponent_state")
-        for b in [a for a in env.agent_ids if a.startswith(opponent_team)]:
-            if b not in opponent_state:
-                raise ValueError(f"checkpoint does not contain opponent agent {b}")
-            subs[b] = FrozenPolicy(opponent_state[b], agent_id=b)
-    elif opponent != "self":
+    if opponent != "self":
         for i, b in enumerate([a for a in env.agent_ids if a.startswith(opponent_team)]):
-            lo, hi = env._allowed_range(b)
-            subs[b] = (
-                RandomAgent(seed=500 + i)
-                if opponent == "random"
-                else (
-                    RangeAwareAgent(home=(lo + hi) / 2.0)
-                    if opponent == "range"
-                    else (
-                        HeuristicAgent(team=opponent_team, home=(lo + hi) / 2.0)
-                        if opponent in ("heuristic", "reactive")
-                        else PredictiveAgent(
-                            opponent_team,
-                            (
-                                -env.cfg.paddle_x_offset
-                                if opponent_team == "A"
-                                else env.cfg.paddle_x_offset
-                            ),
-                            env.cfg.ball_radius,
-                            home=(lo + hi) / 2.0,
-                        )
-                    )
-                )
-            )
-    learned_ids = list(state)
-    if opponent == "self" and set(learned_ids) != set(env.agent_ids):
-        raise ValueError("self-play evaluation requires weights for every agent")
-    missing = set(env.agent_ids) - set(learned_ids) - set(subs)
+            subs[b] = scripted_agent(opponent, env, b, i)
+    learned = [a for a in env.agent_ids if a not in subs]
+    missing = set(learned) - set(state)
     if missing:
-        raise ValueError(f"weights/baseline do not supply agents: {sorted(missing)}")
-    trainer = IndependentPPO(
-        env.agent_ids, cfg=PPOConfig(), trainable_ids=learned_ids, opponents=subs
-    )
-    for a in trainer.ids:
-        trainer.nets[a].load_checkpoint(state[a])
-        trainer.nets[a].eval()
+        raise ValueError(f"weights do not supply agents: {sorted(missing)}")
+    nets = {}
+    for a in learned:
+        nets[a] = ActorCritic(agent_id=a)
+        nets[a].load_checkpoint(state[a])
+        nets[a].eval()
     wins = {"A": 0, "B": 0, "draw": 0}
     returns, lens = [], []
     trajs: dict[str, list[np.ndarray]] = {a: [] for a in env.agent_ids}
@@ -111,7 +97,7 @@ def evaluate_weights(
         while not done:
             actions = {}
             for a, o in obs.items():
-                actions[a] = subs[a].act(o) if a in subs else trainer.nets[a].greedy(o)
+                actions[a] = subs[a].act(o) if a in subs else nets[a].greedy(o)
                 action_counts[a][actions[a]] += 1
             for a in env.agent_ids:
                 ys[a].append(env.paddles[a][0])
@@ -178,7 +164,6 @@ def evaluate_weights(
                 contacts[a] / total_contacts if total_contacts else 0.0
             )
     out = {
-        "mode": cfg.mode,
         "episodes": episodes,
         "win_rate_A": wins["A"] / episodes,
         "win_rate_B": wins["B"] / episodes,
@@ -200,68 +185,23 @@ def evaluate_weights(
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mode", choices=["1v1", "2v2"], default="2v2")
-    ap.add_argument("--env-version", choices=["v1", "v2"], default="v1")
-    ap.add_argument("--paddle-overlap", type=float, default=None)
-    ap.add_argument("--ball-speed-scale", type=float, default=None)
     ap.add_argument("--weights", required=True, help="checkpoint .pt holding all agents")
-    ap.add_argument("--episodes", type=int, default=20)
+    ap.add_argument("--episodes", type=int, default=60)
     ap.add_argument("--seed", type=int, default=1000)
     ap.add_argument("--points", type=int, default=5)
-    ap.add_argument("--reward-mode", choices=["point_only", "shared_hit"], default="point_only")
-    ap.add_argument("--hit-reward", type=float, default=0.05)
     ap.add_argument("--out-json", default=None)
     ap.add_argument("--out-npz", default=None)
-    ap.add_argument(
-        "--opponent",
-        choices=["self", "random", "range", "heuristic", "reactive", "predictive", "checkpoint"],
-        default="self",
-    )
-    ap.add_argument(
-        "--opponent-weights",
-        default=None,
-        help="full-team checkpoint used with --opponent checkpoint",
-    )
+    ap.add_argument("--opponent", choices=OPPONENTS, default="self")
     ap.add_argument("--opponent-team", choices=["A", "B"], default="B")
     args = ap.parse_args()
     import torch
 
-    base_cfg = V2_CALIBRATED if args.env_version == "v2" else Config()
-    speed_source = Config() if args.ball_speed_scale is not None else base_cfg
-    speed_scale = args.ball_speed_scale if args.ball_speed_scale is not None else 1.0
-    cfg = dataclasses.replace(
-        base_cfg,
-        mode=args.mode,
-        points_to_win=args.points,
-        env_version=args.env_version,
-        collision_resolution="closest_paddle" if args.env_version == "v2" else "sequential_id",
-        paddle_overlap=(
-            args.paddle_overlap if args.paddle_overlap is not None else base_cfg.paddle_overlap
-        ),
-        serve_speed_min=speed_source.serve_speed_min * speed_scale,
-        serve_speed_max=speed_source.serve_speed_max * speed_scale,
-        ball_speed_max=speed_source.ball_speed_max * speed_scale,
-        reward_mode=args.reward_mode,
-        hit_reward=args.hit_reward,
-    )
+    cfg = dataclasses.replace(Config(), points_to_win=args.points)
     state = torch.load(args.weights, map_location="cpu", weights_only=True)
-    if args.opponent == "checkpoint" and not args.opponent_weights:
-        ap.error("--opponent checkpoint requires --opponent-weights")
-    opponent_state = (
-        torch.load(args.opponent_weights, map_location="cpu", weights_only=True)
-        if args.opponent == "checkpoint"
-        else None
-    )
     out = evaluate_weights(
-        cfg,
-        state,
-        args.episodes,
-        args.seed,
-        args.out_npz,
-        args.opponent,
-        args.opponent_team,
-        opponent_state,
+        cfg, state, args.episodes, args.seed, args.out_npz, args.opponent, args.opponent_team
     )
+    out["run"] = os.path.basename(os.path.dirname(os.path.abspath(args.weights)))
     print(json.dumps(out, indent=2))
     if args.out_json:
         with open(args.out_json, "w") as f:

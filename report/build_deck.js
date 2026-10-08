@@ -1,5 +1,5 @@
 // Builds report/marl_pong_presentation.pptx from results/ artifacts.
-// Run: NODE_PATH=$(npm root -g) node report/build_deck.js
+// Run: npm install --prefix /tmp/deckdeps pptxgenjs && NODE_PATH=/tmp/deckdeps/node_modules node report/build_deck.js
 const pptxgen = require("pptxgenjs");
 
 const W = 13.33, H = 7.5, M = 0.5;
@@ -80,21 +80,21 @@ s.addText("Four independent PPO agents · one shared team reward · no communica
   x: M, y: 3.05, w: 9.5, h: 0.8, fontSize: 20, fontFace: F, color: DARKMUTED, margin: 0,
 });
 arena(s, 3.1, 4.3, 7.1, 2.2, { label: "A1 + A2 (blue, left)  vs  B1 + B2 (red, right)", labelColor: DARKMUTED });
-s.addText("Results: 3 seeds, 1M steps per 2v2 run · 60-episode deterministic eval · report/report.md", {
+s.addText("Reported run s1_5M: 5M self-play steps, seed 0 · 60-episode deterministic eval per opponent · report/report.md", {
   x: M, y: 7.0, w: W - 2 * M, h: 0.3, fontSize: 12, fontFace: F, color: DARKMUTED, margin: 0,
 });
-s.addNotes("Open with the question, then play the footage. Frame: can teammates coordinate with only local state, teammate state, and a shared win/lose signal? Li et al. 2025 supplies the framing: non-stationarity and credit assignment.");
+s.addNotes("Open with the question, then play the footage (results/videos/). Frame: can teammates coordinate with only local state, teammate state, and a shared win/lose signal? Li et al. 2025 supplies the framing: non-stationarity and credit assignment. The clips use seeds where points are scored; they illustrate, the tables are the evidence.");
 
 // ---------- 2 · Question & setup ----------
 s = p.addSlide();
 s.background = { color: BG };
 title(s, "THE EXPERIMENT", "Coordination without communication");
-arena(s, 7.6, 1.75, 5.2, 2.9, { overlapBand: true, label: "Overlapping vertical ranges — nobody owns a region" });
+arena(s, 7.6, 1.75, 5.2, 2.9, { overlapBand: true, label: "Overlapping vertical ranges — nobody owns the middle" });
 const rows = [
   ["8-dim observations", "own paddle y/vy, ball x/y/vx/vy, teammate y/vy — opponents excluded by design"],
-  ["Shared team reward", "+1 / -1 per point, identical signal to both teammates"],
+  ["Shared team reward", "+1 / -1 per point, identical signal to both teammates, no hit shaping"],
   ["3 actions per paddle", "stay / up / down, applied simultaneously every step"],
-  ["Independent PPO ×4", "separate 64×64 actor-critic MLPs, CPU-only; no shared critic, no parameter sharing"],
+  ["Independent PPO ×4", "separate 64×64 actor and critic MLPs per paddle, CPU-only; no shared critic, no parameter sharing"],
 ];
 rows.forEach(([h, d], i) => {
   const y = 1.8 + i * 1.15;
@@ -102,17 +102,17 @@ rows.forEach(([h, d], i) => {
   s.addText(d, { x: M, y: y + 0.38, w: 6.6, h: 0.55, fontSize: 14, fontFace: F, color: MUTED, margin: 0 });
   if (i < rows.length - 1) s.addShape(p.shapes.LINE, { x: M, y: y + 1.0, w: 6.6, h: 0, line: { color: "E2E8F0", width: 0.75 } });
 });
-s.addNotes("Stress the design constraint: excluding opponent observations is deliberate — it keeps the research question about local+teammate coordination. The overlap band is where both teammates can roam; no fixed regions are assigned.");
+s.addNotes("Stress the design constraint: excluding opponent observations is deliberate; it keeps the research question about local+teammate coordination. Overlapping teammates resolve a contact by closest paddle, so neither has a built-in priority in the shared band.");
 
 // ---------- 3 · Protocol ----------
 s = p.addSlide();
 s.background = { color: BG };
-title(s, "PROTOCOL", "Small enough to run, honest enough to trust");
+title(s, "PROTOCOL", "Calibrate first, then train, then evaluate greedily");
 const stats = [
-  ["4", "independent PPO learners", "64×64 actor-critic MLPs, one per paddle, CPU"],
-  ["3", "seeds per condition", "fresh initialization every run — no warm starts"],
-  ["1M", "steps per 2v2 run", "1v1 sanity baseline at 300k; all runs logged per iteration"],
-  ["60", "eval episodes × 3 opponents", "deterministic greedy play vs self, scripted tracker, random"],
+  ["0.15", "frozen paddle overlap", "picked with scripted agents only, before any PPO run (+ ball speed ×1.15)"],
+  ["4", "independent PPO learners", "rollout 4096 · 6 epochs · minibatch 512 · λ 0.99 · entropy 0.01→0.001"],
+  ["5M", "self-play steps", "seed 0; chosen from a hyperparameter sweep and longer 3-seed runs"],
+  ["60", "eval episodes × 4 opponents", "greedy play vs self-play, random, reactive and predictive trackers"],
 ];
 stats.forEach(([n, h, d], i) => {
   const x = M + i * 3.2;
@@ -123,106 +123,38 @@ stats.forEach(([n, h, d], i) => {
   s.addText(h, { x: x + 0.25, y: 3.45, w: 2.45, h: 0.7, fontSize: 16, fontFace: F, bold: true, color: PRIMARY, margin: 0 });
   s.addText(d, { x: x + 0.25, y: 4.2, w: 2.45, h: 0.95, fontSize: 12.5, fontFace: F, color: MUTED, margin: 0 });
 });
-s.addText("Every number in this deck comes from committed checkpoints, logs, and eval records — reproducible from the repo.", {
+s.addText("Every number in this deck comes from the committed checkpoint, log, and eval records — reproducible from the repo.", {
   x: M, y: 5.9, w: W - 2 * M, h: 0.5, fontSize: 15, fontFace: F, color: TEXT, margin: 0,
 });
-srcLine(s, "Source: results/models/, results/logs/, results/eval_*.json (marl-pong repo)");
-s.addNotes("If asked about MLflow/SB3 deviations: custom PPO was TASK.md option (b); CSV logs replace MLflow; both documented in report section 2.");
+srcLine(s, "Source: results/models/s1_5M/run_config.json, results/calibration_v2.json, results/eval_s1_5M*.json");
+s.addNotes("If asked about MLflow/SB3 deviations: custom PPO was TASK.md option (b); CSV logs replace MLflow. Be upfront that the showcased run is one seed selected from several candidates; slide 8 shows the cross-seed picture.");
 
-// ---------- 4 · Finding 1: no equilibrium ----------
+// ---------- 4 · Finding 1: non-stationarity ----------
 s = p.addSlide();
 s.background = { color: BG };
-title(s, "FINDING 1 · NON-STATIONARITY", "Learning is a wave, not a trend");
-s.addImage({ path: "results/plots/curves_2v2.png", x: M, y: 1.75, w: 6.9, h: 3.94 });
-s.addText("Self-play team A return, smoothed — one curve per seed", {
+title(s, "FINDING 1 · NON-STATIONARITY", "The opponent is the environment");
+s.addImage({ path: "results/plots/curves_mean_return_A.png", x: M, y: 1.75, w: 6.9, h: 3.94 });
+s.addText("Self-play team A return (51-iteration rolling mean)", {
   x: M, y: 5.75, w: 6.9, h: 0.3, fontSize: 12, fontFace: F, color: MUTED, margin: 0, italic: true,
 });
-s.addText("Oscillation, not convergence", {
+s.addText("Collapse, recover, settle", {
   x: 7.9, y: 1.9, w: 5.0, h: 0.8, fontSize: 24, fontFace: F, bold: true, color: PRIMARY, margin: 0,
 });
 s.addText([
-  { text: "Dominance swings in ~300k-step waves — each team's improvement is the other's environment change", options: { bullet: bu(), breakLine: true } },
-  { text: "All three seeds decline together after ~800k steps", options: { bullet: bu(), breakLine: true } },
-  { text: "Which team leads at 1M is a coin flip: seed 1 → A, seeds 0/2 → B", options: { bullet: bu() } },
+  { text: "Team B learns to return first: team A's return dives to −3.4 by ~400k steps", options: { bullet: bu(), breakLine: true } },
+  { text: "Team A catches up and is positive again by ~1.2M; peaks near +1 at 2.5M", options: { bullet: bu(), breakLine: true } },
+  { text: "Last 2M steps settle in a +0.3 to +0.5 band — stable, but not symmetric", options: { bullet: bu() } },
 ], { x: 7.9, y: 2.8, w: 5.0, h: 2.6, fontSize: 15, fontFace: F, color: TEXT, paraSpaceAfter: 10, margin: 0 });
-s.addText("\u201CThe opponent is the environment.\u201D", {
-  x: 7.9, y: 5.3, w: 5.0, h: 0.5, fontSize: 16, fontFace: F, italic: true, color: ACCENT, margin: 0,
-});
-srcLine(s, "Source: results/logs/2v2_seed{0,1,2}_1M.csv — per-iteration returns, 51-iter rolling mean");
-s.addNotes("This is the non-stationarity challenge from Li et al. demonstrated, not just cited. Nobody converged; the optimization target keeps moving. Present the decline at the end honestly: an arms race, not undertraining.");
+srcLine(s, "Source: results/logs/s1_5M.csv — per-iteration returns");
+s.addNotes("Non-stationarity from Li et al. shown, not just cited: each team's improvement is the other team's environment change. This run does settle, with team A ahead.");
 
-// ---------- 5 · Finding 2: vs opposition ----------
+// ---------- 5 · Finding 2: skill calibration ----------
 s = p.addSlide();
 s.background = { color: BG };
-title(s, "FINDING 2 · SKILL CALIBRATION", "Beats random, loses to a hand-written tracker");
+title(s, "FINDING 2 · SKILL CALIBRATION", "Beats the reactive tracker, not the predictive one");
 s.addChart(p.charts.BAR, [
-  { name: "2v2 @ 1M", labels: ["vs random", "vs self-play", "vs scripted tracker"], values: [0.68, 0.43, 0.02] },
-  { name: "1v1 @ 300k", labels: ["vs random", "vs self-play", "vs scripted tracker"], values: [0.48, 0.39, 0.0] },
-], {
-  x: M, y: 1.8, w: 7.6, h: 4.5, barDir: "col", barGapWidthPct: 60,
-  chartColors: [ACCENT, "8B98B3"],
-  chartArea: { fill: { color: "FFFFFF" } },
-  catAxisLabelColor: MUTED, valAxisLabelColor: MUTED,
-  catAxisLabelFontSize: 13, valAxisLabelFontSize: 12,
-  valAxisMaxVal: 1.0, valAxisMinVal: 0, valAxisMajorUnit: 0.25,
-  valGridLine: { color: "E2E8F0", size: 0.5 }, catGridLine: { style: "none" },
-  showValue: true, dataLabelPosition: "outEnd", dataLabelColor: TEXT, dataLabelFontSize: 12, dataLabelFormatCode: "0.00",
-  showLegend: true, legendPos: "b", legendColor: MUTED, legendFontSize: 13,
-  showTitle: true, title: "Team A win rate (blue team), 60 episodes per bar", titleColor: TEXT, titleFontSize: 14,
-});
-s.addShape(p.shapes.ROUNDED_RECTANGLE, { x: 8.6, y: 2.1, w: 4.2, h: 1.7, rectRadius: 0.08, fill: { color: TINT } });
-s.addText("±0.27", { x: 8.85, y: 2.25, w: 3.7, h: 0.7, fontSize: 40, fontFace: F, bold: true, color: ACCENT, margin: 0 });
-s.addText("seed spread on the 0.68 win rate vs random — real skill, fragile across seeds", {
-  x: 8.85, y: 2.95, w: 3.7, h: 0.8, fontSize: 13, fontFace: F, color: TEXT, margin: 0,
-});
-s.addText("A scripted ball tracker wins ~99% against every trained team. PPO-learned play is qualitatively behind hand-written defense at this budget.", {
-  x: 8.6, y: 4.1, w: 4.2, h: 1.6, fontSize: 14, fontFace: F, color: TEXT, margin: 0,
-});
-srcLine(s, "Source: results/summary.md — 3 seeds, 60 greedy episodes per run per opponent");
-s.addNotes("Calibrated honesty: PPO learned something real (0.68 vs random) but far from scripted-perfect. The spread matters: one seed wins ~90%, another ~50%. Do not oversell.");
-
-// ---------- 6 · Finding 3: structure emerges ----------
-s = p.addSlide();
-s.background = { color: BG };
-title(s, "FINDING 3 · COORDINATION EVIDENCE", "Positional roles emerge — nobody assigned them");
-s.addImage({ path: "results/plots/coverage_heatmaps_seed0.png", x: 1.17, y: 2.0, w: 11.0, h: 3.6 });
-s.addText("Paddle y-position over normalized episode time, seed 0: each paddle holds a home band plus chase excursions", {
-  x: 1.17, y: 5.7, w: 11.0, h: 0.35, fontSize: 13, fontFace: F, color: MUTED, margin: 0, italic: true, align: "center",
-});
-s.addText("A1 anchors mid-upper, A2 mid-lower with excursions to the top wall — the mirror structure appears on team B. No communication, no role assignment.", {
-  x: 1.7, y: 6.15, w: 10.0, h: 0.7, fontSize: 15, fontFace: F, color: TEXT, align: "center", margin: 0,
-});
-srcLine(s, "Source: results/traj_2v2_seed0_1M.npz — 20 greedy self-play episodes");
-s.addNotes("This is the centerpiece: the actual research question answered visually. Structure is unambiguous in the heatmaps. Seeds 1 and 2 show different partitions — the deck's next slides quantify that.");
-
-// ---------- 7 · Specialization twist ----------
-s = p.addSlide();
-s.background = { color: BG };
-title(s, "FINDING 3 · CONTINUED", "Specialization is real — and not what we predicted");
-s.addImage({ path: "results/plots/overlap_over_training.png", x: M, y: 1.85, w: 6.9, h: 3.94 });
-s.addText("Teammate coverage overlap at checkpoints (lower = more specialized)", {
-  x: M, y: 5.85, w: 6.9, h: 0.3, fontSize: 12, fontFace: F, color: MUTED, margin: 0, italic: true,
-});
-s.addShape(p.shapes.ROUNDED_RECTANGLE, { x: 7.9, y: 1.95, w: 5.0, h: 1.75, rectRadius: 0.08, fill: { color: TINT } });
-s.addText([
-  { text: "0.01", options: { fontSize: 40, bold: true, color: ACCENT, breakLine: true } },
-  { text: "coverage overlap in seed 1 — a near-disjoint band partition, and the strongest team (0.67 win rate)", options: { fontSize: 13, color: TEXT } },
-], { x: 8.15, y: 2.1, w: 4.5, h: 1.5, fontFace: F, margin: 0 });
-s.addText([
-  { text: "Overlap rises over training in all seeds — early policies barely move; later ones chase hard", options: { bullet: bu(), breakLine: true } },
-  { text: "So complementary roles mean distinct anchors with shared pursuit, not disjoint coverage", options: { bullet: bu(), breakLine: true } },
-  { text: "n = 3: the specialization-success link is suggestive, not causal", options: { bullet: bu() } },
-], { x: 7.9, y: 4.0, w: 5.0, h: 2.2, fontSize: 15, fontFace: F, color: TEXT, paraSpaceAfter: 10, margin: 0 });
-srcLine(s, "Source: overlap sweep over iter_*.pt checkpoints, 4 short greedy probes each");
-s.addNotes("The metric went the 'wrong' way and that is the interesting part: rising overlap reflects vigorous shared chasing on top of stable home bands. Presenting this honestly beats pretending it trended down.");
-
-// ---------- 8 · Asymmetry ----------
-s = p.addSlide();
-s.background = { color: BG };
-title(s, "FINDING 4 · CREDIT ASSIGNMENT", "Which team dominates is a seed lottery");
-s.addChart(p.charts.BAR, [
-  { name: "Team A (blue)", labels: ["seed 0", "seed 1", "seed 2"], values: [0.37, 0.67, 0.25] },
-  { name: "Team B (red)", labels: ["seed 0", "seed 1", "seed 2"], values: [0.58, 0.08, 0.7] },
+  { name: "Team A win", labels: ["vs random", "vs reactive tracker", "vs self-play", "vs predictive tracker"], values: [1.0, 0.63, 0.53, 0.0] },
+  { name: "Team B win", labels: ["vs random", "vs reactive tracker", "vs self-play", "vs predictive tracker"], values: [0.0, 0.07, 0.03, 0.13] },
 ], {
   x: M, y: 1.8, w: 7.6, h: 4.5, barDir: "col", barGapWidthPct: 60,
   chartColors: [ACCENT, RED],
@@ -233,16 +165,81 @@ s.addChart(p.charts.BAR, [
   valGridLine: { color: "E2E8F0", size: 0.5 }, catGridLine: { style: "none" },
   showValue: true, dataLabelPosition: "outEnd", dataLabelColor: TEXT, dataLabelFontSize: 12, dataLabelFormatCode: "0.00",
   showLegend: true, legendPos: "b", legendColor: MUTED, legendFontSize: 13,
-  showTitle: true, title: "Self-play win rates, 2v2 @ 1M (60 episodes)", titleColor: TEXT, titleFontSize: 14,
+  showTitle: true, title: "Win rates, 60 greedy episodes per opponent (the rest are draws)", titleColor: TEXT, titleFontSize: 14,
 });
-s.addText("Asymmetry entrenches", { x: 8.6, y: 2.1, w: 4.2, h: 0.5, fontSize: 22, fontFace: F, bold: true, color: PRIMARY, margin: 0 });
+s.addShape(p.shapes.ROUNDED_RECTANGLE, { x: 8.6, y: 2.1, w: 4.2, h: 1.7, rectRadius: 0.08, fill: { color: TINT } });
+s.addText("0.63", { x: 8.85, y: 2.25, w: 3.7, h: 0.7, fontSize: 40, fontFace: F, bold: true, color: ACCENT, margin: 0 });
+s.addText("win rate vs the reactive scripted tracker (0.07 losses), +0.68 points per game", {
+  x: 8.85, y: 2.95, w: 3.7, h: 0.8, fontSize: 13, fontFace: F, color: TEXT, margin: 0,
+});
+s.addText("Tracker games all hit the 2000-step cap: wins are low-scoring leads, not first-to-5. The predictive tracker is unbeaten — 87% scoreless draws.", {
+  x: 8.6, y: 4.1, w: 4.2, h: 1.6, fontSize: 14, fontFace: F, color: TEXT, margin: 0,
+});
+srcLine(s, "Source: results/summary.md, results/eval_s1_5M*.json");
+s.addNotes("Calibrated honesty: real skill (perfect vs random, majority vs the reactive tracker), but a projected-intercept controller still defends better. Self-play is lopsided: A 0.53, B 0.03.");
+
+// ---------- 6 · Finding 3: structure emerges ----------
+s = p.addSlide();
+s.background = { color: BG };
+title(s, "FINDING 3 · COORDINATION EVIDENCE", "Both guard the middle, each sweeps its side");
+s.addImage({ path: "results/plots/coverage_heatmaps.png", x: 1.17, y: 2.0, w: 11.0, h: 3.6 });
+s.addText("Paddle y-position over normalized episode time, 60 greedy self-play episodes (+y is down)", {
+  x: 1.17, y: 5.7, w: 11.0, h: 0.35, fontSize: 13, fontFace: F, color: MUTED, margin: 0, italic: true, align: "center",
+});
+s.addText("Each paddle parks at the inner edge of its range (the shared middle band) and sweeps out toward its own wall. Team B mirrors it. No communication, no role assignment.", {
+  x: 1.7, y: 6.15, w: 10.0, h: 0.7, fontSize: 15, fontFace: F, color: TEXT, align: "center", margin: 0,
+});
+srcLine(s, "Source: results/traj_s1_5M.npz");
+s.addNotes("The occupancy structure is clear, but occupancy alone is not coordination; the next slide shows who actually returns the ball where.");
+
+// ---------- 7 · Functional roles ----------
+s = p.addSlide();
+s.background = { color: BG };
+title(s, "FINDING 3 · CONTINUED", "A primary middle defender emerges");
+s.addImage({ path: "results/plots/overlap_over_training.png", x: M, y: 1.85, w: 6.9, h: 3.94 });
+s.addText("Team A coverage overlap at checkpoints (short greedy probes)", {
+  x: M, y: 5.85, w: 6.9, h: 0.3, fontSize: 12, fontFace: F, color: MUTED, margin: 0, italic: true,
+});
+s.addShape(p.shapes.ROUNDED_RECTANGLE, { x: 7.9, y: 1.95, w: 5.0, h: 1.75, rectRadius: 0.08, fill: { color: TINT } });
 s.addText([
-  { text: "Shared reward cannot attribute a point to a paddle", options: { bullet: bu(), breakLine: true } },
-  { text: "Whichever team stumbles into a better joint equilibrium early keeps it", options: { bullet: bu(), breakLine: true } },
-  { text: "Same setup, same budget — opposite winners. That variance is the credit-assignment caveat made visible", options: { bullet: bu() } },
+  { text: "~70%", options: { fontSize: 40, bold: true, color: ACCENT, breakLine: true } },
+  { text: "of shared-middle returns made by A2 (2.0 vs 0.9 per game), a role nobody assigned", options: { fontSize: 13, color: TEXT } },
+], { x: 8.15, y: 2.1, w: 4.5, h: 1.5, fontFace: F, margin: 0 });
+s.addText([
+  { text: "Outer-band split (A1 low, A2 high) is forced by the ranges, not evidence by itself", options: { bullet: bu(), breakLine: true } },
+  { text: "Overlap rises 0.04 → 0.3 as both converge on the middle: lower overlap ≠ better coordination", options: { bullet: bu(), breakLine: true } },
+  { text: "Shared reward, uneven work: A2 takes 57% of team contacts", options: { bullet: bu() } },
+], { x: 7.9, y: 4.0, w: 5.0, h: 2.2, fontSize: 15, fontFace: F, color: TEXT, paraSpaceAfter: 10, margin: 0 });
+srcLine(s, "Source: results/eval_s1_5M.json (behavior.*.contact_region_share), overlap sweep over iter_*.pt");
+s.addNotes("This is the functional evidence: both paddles can reach the middle band, and the team allocates it unevenly but consistently across all four evaluation opponents. Discount the outer bands; geometry decides those.");
+
+// ---------- 8 · Selection & robustness ----------
+s = p.addSlide();
+s.background = { color: BG };
+title(s, "ROBUSTNESS", "More budget, stronger team");
+s.addChart(p.charts.BAR, [
+  { name: "vs random", labels: ["1M (1 seed)", "3M (3-seed mean)", "5M (s1_5M)"], values: [0.97, 0.98, 1.0] },
+  { name: "vs reactive tracker", labels: ["1M (1 seed)", "3M (3-seed mean)", "5M (s1_5M)"], values: [0.12, 0.24, 0.63] },
+], {
+  x: M, y: 1.8, w: 7.6, h: 4.5, barDir: "col", barGapWidthPct: 60,
+  chartColors: ["8B98B3", ACCENT],
+  chartArea: { fill: { color: "FFFFFF" } },
+  catAxisLabelColor: MUTED, valAxisLabelColor: MUTED,
+  catAxisLabelFontSize: 13, valAxisLabelFontSize: 12,
+  valAxisMaxVal: 1.0, valAxisMinVal: 0, valAxisMajorUnit: 0.25,
+  valGridLine: { color: "E2E8F0", size: 0.5 }, catGridLine: { style: "none" },
+  showValue: true, dataLabelPosition: "outEnd", dataLabelColor: TEXT, dataLabelFontSize: 12, dataLabelFormatCode: "0.00",
+  showLegend: true, legendPos: "b", legendColor: MUTED, legendFontSize: 13,
+  showTitle: true, title: "Team A win rate, same configuration, growing budget", titleColor: TEXT, titleFontSize: 14,
+});
+s.addText("Why this run", { x: 8.6, y: 2.1, w: 4.2, h: 0.5, fontSize: 22, fontFace: F, bold: true, color: PRIMARY, margin: 0 });
+s.addText([
+  { text: "Rollout 4096 beat rollout 1024, higher entropy, γ 0.999 and lower lr in a 1M sweep", options: { bullet: bu(), breakLine: true } },
+  { text: "Head-to-head, s1_5M's Team A finishes net-ahead of every other candidate's Team B", options: { bullet: bu(), breakLine: true } },
+  { text: "Across 3 seeds at 3M the tracker win rate spans 0.12–0.40: seed matters", options: { bullet: bu() } },
 ], { x: 8.6, y: 2.7, w: 4.2, h: 3.0, fontSize: 15, fontFace: F, color: TEXT, paraSpaceAfter: 10, margin: 0 });
-srcLine(s, "Source: results/eval_2v2_seed{0,1,2}_1M.json — self-play, 60 episodes each");
-s.addNotes("This explains the footage: the recorded clip shows blue winning 4-1, but across 60 episodes red wins that seed 0.58-0.37. One match is anecdote; the table is the finding. Seed 1 is where blue genuinely dominates.");
+srcLine(s, "Source: report/report.md §4.4 — archived comparison runs, same 60-episode protocol");
+s.addNotes("Be explicit: s1_5M is the best observed run, selected after comparison. The 3-seed 3M run is the honest cross-seed estimate; the trend with budget is the robust part.");
 
 // ---------- 9 · Verdict ----------
 s = p.addSlide();
@@ -254,20 +251,20 @@ s.addText("THE VERDICT", {
 s.addText("Partial yes.", {
   x: M, y: 1.5, w: W - 2 * M, h: 1.3, fontSize: 64, fontFace: F, bold: true, color: DARKTEXT, margin: 0,
 });
-s.addText("Complementary positional roles emerge without communication or role assignment — but coordination is a seed lottery, it does not grow monotonically, and win rate alone would have overstated it. Beating random requires zero coordination; the heatmaps are the evidence.", {
-  x: M, y: 3.0, w: 11.0, h: 1.6, fontSize: 20, fontFace: F, color: DARKMUTED, margin: 0,
+s.addText("Without communication or assigned roles, teammates learn a consistent division of labour (each owns its outer band, one becomes the primary middle defender), and that team beats random play and a reactive tracker. It does not match a predictive hand-written defender, and it rests on one showcased seed.", {
+  x: M, y: 3.0, w: 11.5, h: 1.6, fontSize: 20, fontFace: F, color: DARKMUTED, margin: 0,
 });
 const verd = [
-  ["Emerges", "distinct home bands in every seed, from identical rewards and local views"],
-  ["Varies", "coverage overlap spans 0.01 - 0.28 across seeds at eval"],
-  ["Correlates", "the best-partitioned seed is also the strongest team (0.67 win rate)"],
+  ["Emerges", "a primary middle defender (A2, ~70% of shared-band returns) from identical rewards"],
+  ["Works", "1.00 vs random, 0.63 vs the reactive tracker over 60 greedy games each"],
+  ["Bounded", "predictive tracker unbeaten (87% draws); single-seed showcase"],
 ];
 verd.forEach(([h, d], i) => {
   const x = M + i * 4.2;
   s.addText(h, { x, y: 5.1, w: 3.9, h: 0.45, fontSize: 20, fontFace: F, bold: true, color: ACCENT, margin: 0 });
   s.addText(d, { x, y: 5.55, w: 3.9, h: 1.0, fontSize: 13.5, fontFace: F, color: DARKMUTED, margin: 0 });
 });
-s.addNotes("Say the verdict sentence exactly like this, then stop. This is the slide to linger on.");
+s.addNotes("Say the verdict sentence, then stop. This is the slide to linger on.");
 
 // ---------- 10 · Closing ----------
 s = p.addSlide();
@@ -280,9 +277,9 @@ s.addText("What this evidence cannot yet claim", {
   x: M, y: 1.35, w: W - 2 * M, h: 0.9, fontSize: 36, fontFace: F, bold: true, color: DARKTEXT, margin: 0,
 });
 const lims = [
-  ["3 seeds", "the specialization-success correlation needs more runs to be more than suggestive"],
-  ["Unswept overlap", "paddle overlap stayed at its 0.4 default — the frozen-before-training sweep was never run"],
-  ["No frozen-opponent run", "skill improvement and opponent drift remain entangled — the one experiment that would disentangle them"],
+  ["Single seed", "s1_5M was selected from several runs; train seeds 1–2 at 5M to make it a protocol-grade claim"],
+  ["Step-capped games", "matches against trackers never reach 5 points; wins are low-scoring leads at the cap"],
+  ["No frozen-opponent run", "skill growth and opponent drift remain entangled; this is the experiment that would separate them"],
 ];
 lims.forEach(([h, d], i) => {
   const y = 2.7 + i * 1.15;
@@ -290,9 +287,9 @@ lims.forEach(([h, d], i) => {
   s.addText(d, { x: 4.2, y, w: 8.4, h: 0.9, fontSize: 15, fontFace: F, color: DARKMUTED, margin: 0 });
   if (i < lims.length - 1) s.addShape(p.shapes.LINE, { x: M, y: y + 1.0, w: W - 2 * M, h: 0, line: { color: DARKLINE, width: 0.75 } });
 });
-s.addText("Repo: marl-pong — checkpoints, logs, eval records, analysis code, and report/report.md are all committed", {
+s.addText("Repo: marl-pong — checkpoint, logs, eval records, analysis code, and report/report.md are all committed", {
   x: M, y: 6.7, w: W - 2 * M, h: 0.35, fontSize: 12, fontFace: F, color: DARKMUTED, margin: 0,
 });
-s.addNotes("Close on future work: frozen-opponent condition first, then more seeds. Offer the repo for anyone who wants to rerun the eval.");
+s.addNotes("Close on future work: more seeds at 5M first, then the frozen-opponent condition. Offer the repo for anyone who wants to rerun the eval.");
 
 p.writeFile({ fileName: "report/marl_pong_presentation.pptx" }).then(() => console.log("deck written"));

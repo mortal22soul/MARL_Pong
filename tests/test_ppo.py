@@ -5,10 +5,8 @@ import os
 import numpy as np
 import torch
 
-from agents.frozen_policy import FrozenPolicy
 from agents.multi_agent_ppo import IndependentPPO, PPOConfig, compute_gae
 from agents.policies import ActorCritic
-from baselines.agents import RandomAgent
 from environment.config import Config
 from environment.pong_env import PongEnv
 
@@ -16,7 +14,7 @@ from environment.pong_env import PongEnv
 def test_ppo_rollout_and_update_runs():
     import dataclasses
 
-    cfg = dataclasses.replace(Config(), mode="2v2", max_steps=200)
+    cfg = dataclasses.replace(Config(), max_steps=200)
     env = PongEnv(config=cfg, seed=0)
     ppo = PPOConfig(rollout_steps=128, epochs=1, minibatch=64, seed=0)
     trainer = IndependentPPO(env.agent_ids, cfg=ppo)
@@ -43,53 +41,33 @@ def test_ppo_save_load_roundtrip(tmp_path):
     assert torch_allclose(before, after)
 
 
-def test_frozen_policy_replays_checkpoint_network():
-    env = PongEnv(seed=0)
-    trainer = IndependentPPO(env.agent_ids, cfg=PPOConfig(seed=0))
-    frozen = FrozenPolicy(trainer.nets["B1"].state_dict())
-    action = frozen.act(np.zeros(8, dtype=np.float32))
-    assert action in (0, 1, 2)
-
-
-def test_legacy_checkpoint_preserves_raw_observation_semantics():
-    source = ActorCritic(agent_id=None)
-    legacy = {}
-    for key, value in source.state_dict().items():
-        if key.startswith("actor_torso."):
-            legacy[f"torso.{key.removeprefix('actor_torso.')}"] = value
-        elif key.startswith(("logits.", "value_head.")):
-            legacy[key] = value
-    obs = torch.zeros(1, 8)
-    expected_logits = source.logits(source.actor_torso(obs))
-    expected_value = source.value_head(source.actor_torso(obs)).squeeze(-1)
-
-    restored = ActorCritic(agent_id="A1")
-    assert restored.load_checkpoint(legacy)
-    logits, value = restored(obs)
-    assert restored.agent_id is None
-    assert torch.allclose(logits, expected_logits)
-    assert torch.allclose(value, expected_value)
-
-
-def test_ppo_fixed_opponent_and_exact_partial_rollout():
+def test_ppo_exact_partial_rollout():
     import dataclasses
 
     env = PongEnv(config=dataclasses.replace(Config(), max_steps=100), seed=0)
-    opponents = {"B1": RandomAgent(1), "B2": RandomAgent(2)}
     trainer = IndependentPPO(
-        env.agent_ids,
-        cfg=PPOConfig(rollout_steps=64, epochs=1, minibatch=16, seed=0),
-        trainable_ids=["A1", "A2"],
-        opponents=opponents,
+        env.agent_ids, cfg=PPOConfig(rollout_steps=64, epochs=1, minibatch=16, seed=0)
     )
     trainer.reset(env)
     buf, advs, rets, stats = trainer.rollout(env, steps=17)
     assert trainer.global_steps == 17
-    assert set(buf) == {"A1", "A2"}
+    assert set(buf) == set(env.agent_ids)
     assert all(buf[a]["obs"].shape == (17, 8) for a in buf)
     assert stats["reward_event_rate"] >= 0.0
     losses = trainer.update(buf, advs, rets)
     assert np.isfinite(losses["kl"])
+
+
+def test_numpy_sampler_matches_torch_forward():
+    net = ActorCritic(agent_id="A1")
+    sampler = net.numpy_sampler()
+    feat = np.linspace(-1.0, 1.0, 8).astype(np.float32)
+    action, logp, value = sampler.sample(feat, np.random.default_rng(0))
+    with torch.no_grad():
+        logits, v = net(torch.as_tensor(feat).unsqueeze(0))
+    expected_logp = torch.log_softmax(logits, dim=-1)[0, action]
+    assert abs(logp - float(expected_logp)) < 1e-5
+    assert abs(value - float(v)) < 1e-5
 
 
 def test_compute_gae_known_undiscounted_trajectory():

@@ -96,7 +96,7 @@ def test_plot_y_heatmaps_renders_file(tmp_path):
 
 
 def test_overlap_at_checkpoints_with_fresh_weights(tmp_path):
-    cfg = dataclasses.replace(Config(), mode="2v2", max_steps=120, points_to_win=1)
+    cfg = dataclasses.replace(Config(), max_steps=120, points_to_win=1)
     env = PongEnv(config=cfg, seed=0)
     trainer = IndependentPPO(env.agent_ids, cfg=PPOConfig(seed=0))
     state = {a: trainer.nets[a].state_dict() for a in env.agent_ids}

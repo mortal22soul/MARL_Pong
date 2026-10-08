@@ -1,7 +1,7 @@
-"""Scripted-only v2 environment calibration; never trains PPO.
+"""Scripted-only environment calibration; never trains PPO.
 
 Sweeps predeclared overlap and speed candidates, then records baseline-ladder
-match statistics. Select v2 settings from reachability and scripted behavior,
+match statistics. Select settings from reachability and scripted behavior,
 not from PPO performance, and freeze the chosen Config before main training.
 """
 
@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 
 from baselines.agents import HeuristicAgent, PredictiveAgent, RandomAgent, RangeAwareAgent
-from environment.config import V2_DEFAULT, Config
+from environment.config import BASE_BALL_SPEEDS, Config
 from environment.pong_env import PongEnv
 
 
@@ -93,18 +93,16 @@ def main() -> None:
     ap.add_argument("--speed-scales", default="1.0")
     ap.add_argument("--episodes", type=int, default=60)
     ap.add_argument("--seed", type=int, default=1000)
-    ap.add_argument("--out", default="results/calibration_v2.json")
+    ap.add_argument("--out", default="results/calibration_rerun.json")
     args = ap.parse_args()
 
     rows = []
     for overlap in parse_csv_floats(args.overlaps):
         for scale in parse_csv_floats(args.speed_scales):
             cfg = dataclasses.replace(
-                V2_DEFAULT,
+                Config(),
                 paddle_overlap=overlap,
-                serve_speed_min=V2_DEFAULT.serve_speed_min * scale,
-                serve_speed_max=V2_DEFAULT.serve_speed_max * scale,
-                ball_speed_max=V2_DEFAULT.ball_speed_max * scale,
+                **{k: v * scale for k, v in BASE_BALL_SPEEDS.items()},
             )
             # Same-policy games calibrate the ladder without PPO selection.
             games = [
@@ -123,7 +121,7 @@ def main() -> None:
     with open(args.out, "w") as f:
         json.dump(
             {
-                "purpose": "scripted-only v2 calibration",
+                "purpose": "scripted-only calibration",
                 "provenance": {
                     "generated_at_utc": datetime.datetime.now(datetime.UTC).isoformat(),
                     "git_revision": git_revision(),

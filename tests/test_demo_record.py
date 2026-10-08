@@ -14,8 +14,6 @@ def test_demo_record_writes_valid_mp4(tmp_path):
         sys.executable,
         "demo.py",
         "--headless",
-        "--mode",
-        "1v1",
         "--opponent",
         "random",
         "--points",

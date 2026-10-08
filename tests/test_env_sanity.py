@@ -3,7 +3,7 @@ import dataclasses
 import numpy as np
 
 from baselines.agents import HeuristicAgent, RandomAgent
-from environment.config import V2_CALIBRATED, Config
+from environment.config import Config
 from environment.pong_env import PongEnv
 
 
@@ -104,39 +104,6 @@ def test_serve_speed_varies_and_in_range():
     assert len(speeds) > 1  # serves differ across episodes
 
 
-def test_1v1_teams_and_full_range():
-    cfg = dataclasses.replace(Config(), mode="1v1")
-    env = PongEnv(config=cfg, seed=0)
-    obs, _ = env.reset(seed=0)
-    assert set(obs) == {"A1", "B1"}  # one paddle per side, not same-team pair
-    lo, hi = env._allowed_range("A1")
-    limit = 1.0 - cfg.paddle_height / 2.0
-    assert lo == -limit and hi == limit  # full field, unlike 2v2 partial ranges
-    # Paddle can actually travel from top to bottom.
-    for _ in range(300):
-        obs, _, term, trunc, _ = env.step({"A1": 2, "B1": 1})
-        if all(term.values()) or all(trunc.values()):
-            break
-    assert env.paddles["A1"][0] > 0.5 and env.paddles["B1"][0] < -0.5
-
-
-def test_1v1_scoring_and_reward():
-    cfg = dataclasses.replace(Config(), mode="1v1", points_to_win=1)
-    env = PongEnv(config=cfg, seed=0)
-    env.reset(seed=0)
-    env.ball = [1.04, 0.0, 2.0, 0.0]  # about to exit right -> A scores
-    _, rewards, terminated, _, _ = env.step({"A1": 0, "B1": 0})
-    assert rewards == {"A1": 1.0, "B1": -1.0}
-    assert all(terminated.values())
-
-
-def test_invalid_mode_rejected():
-    import pytest
-
-    with pytest.raises(ValueError):
-        PongEnv(config=dataclasses.replace(Config(), mode="3v3"))
-
-
 def test_2v2_spawn_formation_separated():
     env = PongEnv(seed=0)  # default 2v2
     env.reset(seed=0)
@@ -146,21 +113,8 @@ def test_2v2_spawn_formation_separated():
     assert env.paddles["B2"][0] < -0.2
 
 
-def test_v1_shared_region_keeps_agent_id_collision_priority():
-    cfg = dataclasses.replace(Config(), env_version="v1", collision_resolution="sequential_id")
-    env = PongEnv(config=cfg, seed=0)
-    env.reset(seed=0)
-    env.paddles["A1"] = [0.10, 0.0]
-    env.paddles["A2"] = [0.00, 0.0]
-    env.ball = [-0.90, 0.0, -1.0, 0.0]
-    _, _, _, _, info = env.step({a: 0 for a in env.agent_ids})
-    assert info["hits"]["A1"] == 1
-    assert info["hits"]["A2"] == 0
-
-
-def test_v2_shared_region_chooses_closest_paddle():
-    cfg = dataclasses.replace(Config(), env_version="v2", collision_resolution="closest_paddle")
-    env = PongEnv(config=cfg, seed=0)
+def test_shared_region_chooses_closest_paddle():
+    env = PongEnv(seed=0)
     env.reset(seed=0)
     env.paddles["A1"] = [0.10, 0.0]
     env.paddles["A2"] = [0.00, 0.0]
@@ -170,9 +124,8 @@ def test_v2_shared_region_chooses_closest_paddle():
     assert info["hits"]["A2"] == 1
 
 
-def test_v2_collision_selection_is_symmetric_for_team_b():
-    cfg = dataclasses.replace(Config(), env_version="v2", collision_resolution="closest_paddle")
-    env = PongEnv(config=cfg, seed=0)
+def test_collision_selection_is_symmetric_for_team_b():
+    env = PongEnv(seed=0)
     env.reset(seed=0)
     env.paddles["B1"] = [0.10, 0.0]
     env.paddles["B2"] = [0.00, 0.0]
@@ -182,28 +135,22 @@ def test_v2_collision_selection_is_symmetric_for_team_b():
     assert info["hits"]["B2"] == 1
 
 
-def test_v2_calibrated_profile_is_frozen():
-    assert V2_CALIBRATED.env_version == "v2"
-    assert V2_CALIBRATED.collision_resolution == "closest_paddle"
-    assert V2_CALIBRATED.paddle_overlap == 0.15
-    assert V2_CALIBRATED.serve_speed_min == 0.805
-    assert V2_CALIBRATED.serve_speed_max == 1.15
-    assert V2_CALIBRATED.reward_mode == "point_only"
+def test_calibrated_profile_is_frozen():
+    cfg = Config()
+    assert cfg.paddle_overlap == 0.15
+    assert cfg.serve_speed_min == 0.805
+    assert cfg.serve_speed_max == 1.15
+    assert cfg.ball_speed_max == 1.84
 
 
-def test_primary_reward_default_is_point_only():
-    assert Config().reward_mode == "point_only"
-
-
-def test_shared_hit_reward_is_team_identical_diagnostic_mode():
-    cfg = dataclasses.replace(Config(), reward_mode="shared_hit", hit_reward=0.05)
-    env = PongEnv(config=cfg, seed=0)
+def test_hits_give_no_reward():
+    env = PongEnv(seed=0)
     env.reset(seed=0)
     env.paddles["A1"] = [0.0, 0.0]
     env.ball = [-0.90, 0.0, -1.0, 0.0]
-    _, rewards, _, _, _ = env.step({a: 0 for a in env.agent_ids})
-    assert rewards["A1"] == rewards["A2"] == 0.05
-    assert rewards["B1"] == rewards["B2"] == 0.0
+    _, rewards, _, _, info = env.step({a: 0 for a in env.agent_ids})
+    assert info["hits"]["A1"] == 1
+    assert set(rewards.values()) == {0.0}  # point-only shared reward
 
 
 def test_contact_regions_record_impact_band():

@@ -46,7 +46,7 @@ def test_heuristic_drifts_home_when_ball_recedes():
 def test_heuristic_team_vs_random_team_plays_full_episodes():
     import dataclasses
 
-    cfg = dataclasses.replace(Config(), mode="2v2", max_steps=400, points_to_win=1)
+    cfg = dataclasses.replace(Config(), max_steps=400, points_to_win=1)
     env = PongEnv(config=cfg, seed=0)
     heuristics = {}
     for a in env.agent_ids:

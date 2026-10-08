@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import dataclasses
 import json
 import os
 import sys
@@ -12,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch
 
-from environment.config import V2_CALIBRATED, Config
+from environment.config import Config
 from evaluation.evaluate import evaluate_weights
 
 
@@ -23,19 +22,12 @@ def checkpoint_path(run: str) -> str:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", nargs="+", required=True, help="run names or final.pt paths")
-    ap.add_argument("--mode", choices=["2v2"], default="2v2")
-    ap.add_argument("--env-version", choices=["v1", "v2"], default="v1")
     ap.add_argument("--episodes", type=int, default=60)
     ap.add_argument("--seed", type=int, default=80_000)
     ap.add_argument("--out", default="results/crossplay.json")
     args = ap.parse_args()
 
-    base = V2_CALIBRATED if args.env_version == "v2" else Config()
-    cfg = dataclasses.replace(
-        base,
-        mode=args.mode,
-        collision_resolution="closest_paddle" if args.env_version == "v2" else "sequential_id",
-    )
+    cfg = Config()
     loaded = {
         run: torch.load(checkpoint_path(run), map_location="cpu", weights_only=True)
         for run in args.runs
@@ -63,8 +55,6 @@ def main() -> None:
     with open(args.out, "w") as f:
         json.dump(
             {
-                "mode": args.mode,
-                "env_version": args.env_version,
                 "episodes": args.episodes,
                 "rows": rows,
             },

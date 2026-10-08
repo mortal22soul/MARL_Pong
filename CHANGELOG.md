@@ -6,6 +6,42 @@ ad-hoc pre-1.0 while the game is built ahead of the RL phase in `TASK.md`.
 
 ## [Unreleased]
 
+### Cleanup — single reported result (`s1_5M`)
+
+#### Changed
+- Reported result is now `s1_5M`: 5M-step self-play, seed 0, rollout 4096 /
+  6 epochs / minibatch 512 / λ 0.99. Evaluated over 60 episodes it wins 1.00
+  vs random, 0.63 vs the reactive tracker and 0.00 vs the predictive tracker
+  (0.87 draws). Report, deck, README and HOW_TO_RUN are rewritten around it.
+- The calibrated profile (overlap 0.15, ball speed ×1.15, closest-paddle
+  collisions, point-only reward) is now the only environment and the
+  `Config()` default. `PPOConfig` and the training CLI default to the reported
+  hyperparameters (5M steps, 60-episode final eval).
+- Rollouts sample through a pure-NumPy snapshot of each policy
+  (`NumpySampler`), and next-state values are batched per rollout. The
+  algorithm is unchanged; this is a large speed-up for single-observation
+  sampling.
+- `demo.py`: `--opponent self|heuristic|random` works with `--weights`, so a
+  trained Team A can face a scripted Team B. Added `--seed`.
+- `calibrate_env.py` scales from `BASE_BALL_SPEEDS` (reproduces
+  `results/calibration_v2.json` exactly) and writes `calibration_rerun.json`
+  by default.
+
+#### Removed
+- v1 environment path (sequential-ID collision priority, uncalibrated overlap
+  0.4) and all v1 artifacts.
+- 1v1 mode (`exp_1v1_baseline.py`, `--mode`) and its results.
+- Frozen/scripted-opponent training (`agents/frozen_policy.py`,
+  `--train-team`, `--opponent`, `--opponent-weights`), and checkpoint
+  opponents in evaluation.
+- `shared_hit` / `shaped` reward modes, legacy shared-torso checkpoint loading,
+  and `--env-version` / `--paddle-overlap` / `--ball-speed-scale` flags.
+- Superseded runs: v2 1M 3-seed runs, 150k gate and shared-hit diagnostics,
+  the aborted frozen-opponent run, and the hyperparameter sweep (`s1_*`,
+  `big3M_*`). Their numbers are summarized in `report/report.md` §4.4; the
+  artifacts are kept in an off-repo archive.
+- v1 plots and video; replaced by `s1_5M` figures and footage.
+
 ### Added
 - `HOW_TO_RUN.md`: manual command reference for demos, dual-paddle controls,
   trained playback, evaluation, calibration, analysis, and PPO conditions.

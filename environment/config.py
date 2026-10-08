@@ -6,21 +6,22 @@ Rendering maps those to pixels; physics never touches pixels.
 
 from dataclasses import dataclass, field
 
+# Pre-calibration ball speeds. experiments/calibrate_env.py scales these by each
+# candidate speed factor; the frozen Config below uses CALIBRATED_SPEED_SCALE.
+BASE_BALL_SPEEDS = {"serve_speed_min": 0.7, "serve_speed_max": 1.0, "ball_speed_max": 1.6}
+CALIBRATED_SPEED_SCALE = 1.15
+
 
 @dataclass(frozen=True)
 class Config:
-    # --- protocol version ---
-    # v1 preserves the originally reported sequential collision behavior.
-    # v2 resolves overlaps symmetrically; it must be calibrated before PPO runs.
-    env_version: str = "v1"
-    collision_resolution: str = "sequential_id"
     # --- simulation ---
     dt: float = 1.0 / 60.0
     # Ball serve: uniform angle in [-max, +max] degrees off horizontal, random side,
     # and uniform speed in [serve_speed_min, serve_speed_max] so serves vary.
-    serve_speed_min: float = 0.7
-    serve_speed_max: float = 1.0
-    ball_speed_max: float = 1.6  # clamp after rally escalation
+    # Speeds are BASE_BALL_SPEEDS x CALIBRATED_SPEED_SCALE.
+    serve_speed_min: float = 0.805
+    serve_speed_max: float = 1.15
+    ball_speed_max: float = 1.84  # clamp after rally escalation
     serve_angle_deg_max: float = 35.0
     ball_radius: float = 0.025
     # Rally escalation: vx multiplied by hit_speedup on every paddle contact,
@@ -34,24 +35,16 @@ class Config:
     paddle_max_speed: float = 1.6  # normalized units / second
     paddle_accel: float = 12.0  # approach to target velocity (inertia)
     paddle_brake_accel: float = 24.0  # deceleration when action=stay
-    # Vertical range each paddle may occupy, as (center, half_height) in y.
-    # Overlap is the TEMPORARY default; final value is frozen later via
-    # heuristic-only sweep per TASK.md (not tuned to PPO).
-    # P1 covers upper region, P2 covers lower region, overlapping in middle.
-    paddle_overlap: float = 0.4
+    # Vertical range each paddle may occupy. P1 covers the upper region, P2 the
+    # lower region, overlapping in the middle. Frozen from the scripted-only
+    # sweep in results/calibration_v2.json (TASK.md protocol) — never tuned to PPO.
+    paddle_overlap: float = 0.15
     paddle_x_offset: float = 0.92  # |x| of paddle centerlines
 
     # --- episode ---
+    # Reward is point-only and shared per team (+1/-1 per point).
     points_to_win: int = 5
     max_steps: int = 2000  # prevents infinite rallies stalling training
-    # Primary protocol: macro point-only shared reward. shared_hit and shaped
-    # are diagnostic ablations and must be selected explicitly on the CLI.
-    reward_mode: str = "point_only"
-    hit_reward: float = 0.05
-    team_hit_reward: float = 0.0
-    # "2v2" (A1,A2 vs B1,B2, overlapping partial ranges) or
-    # "1v1" (A1 vs B1, each covering the full field height).
-    mode: str = "2v2"
 
     # --- render ---
     screen_width: int = 800
@@ -81,20 +74,3 @@ class Config:
 
 
 DEFAULT = Config()
-
-
-V2_DEFAULT = Config(env_version="v2", collision_resolution="closest_paddle")
-
-# Frozen from results/calibration_v2.json on 2026-09-30. Scripted-only tests
-# found that this smallest tested overlap keeps a meaningful shared region;
-# scale 1.15 makes reactive tracking imperfect while predictive tracking stays
-# stronger. Main v2 PPO runs must use this profile unchanged.
-V2_CALIBRATED = Config(
-    env_version="v2",
-    collision_resolution="closest_paddle",
-    paddle_overlap=0.15,
-    serve_speed_min=0.805,
-    serve_speed_max=1.15,
-    ball_speed_max=1.84,
-    reward_mode="point_only",
-)

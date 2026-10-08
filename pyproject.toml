@@ -1,7 +1,7 @@
 [project]
 name = "marl-pong"
 version = "0.1.0"
-description = "Emergent Coordination in 2v2 Pong via Independent PPO (game first, RL later)"
+description = "Emergent Coordination in 2v2 Pong via Independent PPO"
 requires-python = ">=3.14"
 dependencies = [
     "gymnasium",

@@ -31,7 +31,7 @@ def _write_eval(results_dir, run, opponent, **overrides):
 
 def test_condition_of_strips_seed():
     assert condition_of("2v2_seed1_1M") == "2v2_1M"
-    assert condition_of("1v1_seed0") == "1v1"
+    assert condition_of("big_seed0") == "big"
     assert condition_of("2v2_seed0_cont1M") == "2v2_cont1M"
 
 

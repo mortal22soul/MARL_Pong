@@ -10,16 +10,11 @@ def step_paddle(y: float, vy: float, action: int, cfg: Config) -> tuple[float, f
         target = -cfg.paddle_max_speed
     elif action == 2:
         target = cfg.paddle_max_speed
-    accel = cfg.paddle_accel if action != 0 else getattr(cfg, "paddle_brake_accel", 24.0)
+    accel = cfg.paddle_accel if action != 0 else cfg.paddle_brake_accel
     # Exponential approach gives minimal inertia (no teleport, no long slide).
     blend = min(1.0, accel * cfg.dt)
     vy_new = vy + (target - vy) * blend
     return y + vy_new * cfg.dt, vy_new
-
-
-def clamp_paddle(y: float, cfg: Config, slot: int) -> float:
-    lo, hi = cfg.paddle_range(slot)
-    return max(lo, min(hi, y))
 
 
 def step_ball(
@@ -81,9 +76,9 @@ def paddle_overlaps_ball(
 ) -> bool:
     """Whether an incoming ball overlaps a paddle's collision rectangle.
 
-    This predicate is deliberately separate from ``paddle_collision`` so v2
-    can choose among all simultaneous teammate candidates before mutating the
-    ball velocity. v1 keeps its original sequential mutation semantics.
+    This predicate is deliberately separate from ``paddle_collision`` so the
+    env can choose among all simultaneous teammate candidates before mutating
+    the ball velocity.
     """
     h = cfg.paddle_height / 2.0
     w = cfg.paddle_width / 2.0 + cfg.ball_radius
